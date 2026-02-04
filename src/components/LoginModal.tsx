@@ -1,6 +1,7 @@
 import { X, Mail, Lock, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { states, getCitiesByState } from '../data/venezuelaData';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -14,6 +15,13 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    state: '',
+    city: '',
+  });
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -27,6 +35,10 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  const handleStateChange = (stateCode: string) => {
+    setProfileData({ ...profileData, state: stateCode, city: '' });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,16 +55,38 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         if (error) throw error;
         onLoginSuccess();
       } else {
-        const { error } = await supabase.auth.signUp({
+        if (!profileData.first_name || !profileData.last_name || !profileData.state || !profileData.city) {
+          setError('Por favor completa todos los campos');
+          setLoading(false);
+          return;
+        }
+
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
 
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+
+        if (data.user) {
+          const { error: profileError } = await supabase
+            .from('customer_profiles')
+            .insert({
+              id: data.user.id,
+              first_name: profileData.first_name,
+              last_name: profileData.last_name,
+              phone: profileData.phone,
+              state: profileData.state,
+              city: profileData.city,
+            });
+
+          if (profileError) throw profileError;
+        }
+
         onLoginSuccess();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      setError(err instanceof Error ? err.message : 'Error al procesar la solicitud');
     } finally {
       setLoading(false);
     }
@@ -75,7 +109,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           <div>
             <label className="block text-slate-300 text-sm mb-2">Email</label>
             <div className="relative">
@@ -107,6 +141,82 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             </div>
           </div>
 
+          {!isLogin && (
+            <>
+              <div>
+                <label className="block text-slate-300 text-sm mb-2">Nombre *</label>
+                <input
+                  type="text"
+                  required
+                  value={profileData.first_name}
+                  onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  placeholder="Juan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm mb-2">Apellido *</label>
+                <input
+                  type="text"
+                  required
+                  value={profileData.last_name}
+                  onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  placeholder="Pérez"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm mb-2">Teléfono</label>
+                <input
+                  type="tel"
+                  value={profileData.phone}
+                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  placeholder="0424-1234567"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 text-sm mb-2">Estado *</label>
+                  <select
+                    required
+                    value={profileData.state}
+                    onChange={(e) => handleStateChange(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">Seleccionar</option>
+                    {states.map((state) => (
+                      <option key={state.code} value={state.code}>
+                        {state.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm mb-2">Ciudad *</label>
+                  <select
+                    required
+                    value={profileData.city}
+                    onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                    disabled={!profileData.state}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Seleccionar</option>
+                    {profileData.state && getCitiesByState(profileData.state).map((city) => (
+                      <option key={city.name} value={city.name}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
               <p className="text-red-400 text-sm">{error}</p>
@@ -131,7 +241,10 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError(null);
+              }}
               className="text-amber-400 hover:text-amber-300 text-sm transition-colors"
             >
               {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}

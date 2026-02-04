@@ -284,7 +284,6 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
 
       setError(null);
       setTrackingCode(responseData.tracking_code);
-      setOrderId(responseData.order_id);
       setSuccess(true);
       setProofFile(null);
       setProofPreview(null);
