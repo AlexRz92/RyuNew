@@ -21,6 +21,7 @@ interface CheckoutRequest {
   address?: string;
   cedula: string;
   items: CartItem[];
+  payment_proof_url: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -59,6 +60,19 @@ Deno.serve(async (req: Request) => {
     if (!body.customer_name || !body.customer_email || !body.country || !body.state || !body.city || !body.cedula) {
       return new Response(
         JSON.stringify({ error: "Missing required customer fields" }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (!body.payment_proof_url) {
+      return new Response(
+        JSON.stringify({ error: "Debes subir el comprobante antes de confirmar" }),
         {
           status: 400,
           headers: {
@@ -256,7 +270,7 @@ Deno.serve(async (req: Request) => {
         customer_email: body.customer_email,
         customer_phone: body.customer_phone || null,
         payment_method: "transfer",
-        payment_proof_url: null,
+        payment_proof_url: body.payment_proof_url,
         total_amount: totalAmount,
         status: "pending",
         notes: shippingNotes,

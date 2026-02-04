@@ -28,9 +28,6 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
-  const [orderId, setOrderId] = useState('');
-  const [showProofUpload, setShowProofUpload] = useState(false);
-  const [uploadingProof, setUploadingProof] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shippingInfo, setShippingInfo] = useState<{
     isFree: boolean;
@@ -57,6 +54,11 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
 
   useEffect(() => {
     if (isOpen) {
+      setProofFile(null);
+      setProofPreview(null);
+      setError(null);
+      setSuccess(false);
+      setTrackingCode('');
       if (isGuest) {
         setFormData({
           first_name: '',
@@ -87,9 +89,7 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
       setShippingInfo(null);
       setError(null);
       setSuccess(false);
-      setShowProofUpload(false);
       setTrackingCode('');
-      setOrderId('');
     }
   }, [isOpen, isGuest]);
 
@@ -198,6 +198,30 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
     setLoading(true);
 
     try {
+      if (!proofFile) {
+        setError('Debes seleccionar una imagen del comprobante');
+        setLoading(false);
+        return;
+      }
+
+      const fileExt = proofFile.name.split('.').pop();
+      const tempFilePath = `temp/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('transfer-proofs')
+        .upload(tempFilePath, proofFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw new Error('Error al subir el comprobante. Por favor intenta nuevamente.');
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('transfer-proofs')
+        .getPublicUrl(tempFilePath);
+
       const { data: { user } } = await supabase.auth.getUser();
 
       const customerName = `${formData.first_name} ${formData.last_name}`;
@@ -216,6 +240,7 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
           product_id: item.product.id,
           quantity: item.quantity,
         })),
+        payment_proof_url: urlData.publicUrl,
       };
 
       let authHeader = '';
@@ -257,11 +282,14 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
         throw new Error(responseData.error || 'Error al crear la orden');
       }
 
+      setError(null);
       setTrackingCode(responseData.tracking_code);
       setOrderId(responseData.order_id);
-      setShowProofUpload(true);
+      setSuccess(true);
+      setProofFile(null);
+      setProofPreview(null);
     } catch (err) {
-      console.error('Error creating order:', err);
+      console.error('Error in checkout:', err);
       const errorMessage = err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido. Por favor intenta nuevamente.';
       setError(errorMessage);
     } finally {
@@ -269,55 +297,6 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
     }
   };
 
-  const handleProofUpload = async () => {
-    if (!proofFile || !trackingCode) {
-      setError('Debes seleccionar una imagen del comprobante');
-      return;
-    }
-
-    setError(null);
-    setUploadingProof(true);
-
-    try {
-      const fileExt = proofFile.name.split('.').pop();
-      const filePath = `orders/${trackingCode}/comprobante.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('transfer-proofs')
-        .upload(filePath, proofFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.error('Error uploading file:', uploadError);
-        throw new Error('Error al subir el comprobante. Por favor intenta nuevamente.');
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('transfer-proofs')
-        .getPublicUrl(filePath);
-
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ payment_proof_url: urlData.publicUrl })
-        .eq('id', orderId);
-
-      if (updateError) {
-        console.error('Error updating order:', updateError);
-        throw new Error('Error al actualizar la orden. Por favor contacta soporte.');
-      }
-
-      setShowProofUpload(false);
-      setSuccess(true);
-    } catch (err) {
-      console.error('Error in proof upload:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error al procesar el comprobante. Por favor intenta nuevamente.';
-      setError(errorMessage);
-    } finally {
-      setUploadingProof(false);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -356,87 +335,6 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
           >
             OK, ya copié mi código
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (showProofUpload) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-        <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl w-full max-w-md shadow-2xl">
-          <div className="p-6 border-b border-amber-500/20">
-            <h2 className="text-2xl font-bold text-white mb-2">Pedido Creado</h2>
-            <p className="text-slate-300 text-sm">Código: <span className="text-amber-400 font-bold">{trackingCode}</span></p>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-              <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
-              <p className="text-slate-300 text-sm">
-                Debes subir el comprobante de transferencia para completar tu pedido
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-slate-300 text-sm mb-2 font-semibold">
-                Comprobante de Transferencia *
-              </label>
-              <div className="bg-slate-900/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  id="proof-upload-final"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <label htmlFor="proof-upload-final" className="cursor-pointer">
-                  {proofPreview ? (
-                    <img
-                      src={proofPreview}
-                      alt="Comprobante"
-                      className="max-h-48 mx-auto rounded-lg mb-3"
-                    />
-                  ) : (
-                    <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  )}
-                  <p className="text-slate-400 text-sm">
-                    {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen'}
-                  </p>
-                </label>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
-
-            <button
-              onClick={handleProofUpload}
-              disabled={!proofFile || uploadingProof}
-              className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {uploadingProof ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Subiendo comprobante...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  Subir Comprobante
-                </>
-              )}
-            </button>
-
-            <p className="text-slate-500 text-xs text-center">
-              No podrás continuar sin subir el comprobante
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -620,6 +518,46 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
             </div>
           </div>
 
+          <div className="space-y-4">
+            <h3 className="text-white font-semibold">Comprobante de Transferencia</h3>
+
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+              <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
+              <p className="text-slate-300 text-sm">
+                Debes subir una captura del comprobante de transferencia
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 text-sm mb-2 font-semibold">
+                Captura de Pantalla del Comprobante *
+              </label>
+              <div className="bg-slate-900/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="proof-upload-checkout"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label htmlFor="proof-upload-checkout" className="cursor-pointer block">
+                  {proofPreview ? (
+                    <img
+                      src={proofPreview}
+                      alt="Comprobante"
+                      className="max-h-48 mx-auto rounded-lg mb-3"
+                    />
+                  ) : (
+                    <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  )}
+                  <p className="text-slate-400 text-sm">
+                    {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen (JPG, PNG o WEBP)'}
+                  </p>
+                </label>
+              </div>
+            </div>
+          </div>
+
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
               <p className="text-red-400 text-sm">{error}</p>
@@ -628,7 +566,7 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !proofFile}
             className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
