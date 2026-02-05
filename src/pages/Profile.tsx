@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase, OrderItem } from '../lib/supabase';
-import { LogOut, Copy, Check, Download, ShoppingBag } from 'lucide-react';
+import { LogOut, Copy, Check, Download, ShoppingBag, RefreshCw, Loader2 as LoaderIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
+import { states, getCitiesByState } from '../data/venezuelaData';
 
 const formatUSD = (amount: number | null | undefined) => {
   if (amount === null || amount === undefined || amount === 0) {
@@ -56,6 +57,7 @@ export function Profile() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<boolean | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [reorderingOrderId, setReorderingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthentication();
@@ -181,6 +183,83 @@ export function Profile() {
   async function handleLoginSuccess() {
     setIsLoginOpen(false);
     await checkAuthentication();
+  }
+
+  async function handleReorder(order: Order) {
+    try {
+      setReorderingOrderId(order.id);
+
+      if (!order.items || order.items.length === 0) {
+        const items = await fetchOrderItems(order.id);
+        order.items = items;
+      }
+
+      if (!order.items || order.items.length === 0) {
+        alert('No se pudieron cargar los productos de esta orden');
+        setReorderingOrderId(null);
+        return;
+      }
+
+      const productIds = order.items.map((item) => item.product_id);
+
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('id, name, price, is_active')
+        .in('id', productIds);
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        alert('Error al validar los productos');
+        setReorderingOrderId(null);
+        return;
+      }
+
+      const activeProductsMap = new Map(
+        (products || [])
+          .filter((p) => p.is_active)
+          .map((p) => [p.id, p])
+      );
+
+      const validItems = [];
+      const unavailableItems = [];
+
+      for (const item of order.items) {
+        const product = activeProductsMap.get(item.product_id);
+        if (product) {
+          validItems.push({
+            product_id: item.product_id,
+            quantity: item.quantity,
+          });
+        } else {
+          unavailableItems.push(item.product_name);
+        }
+      }
+
+      if (validItems.length === 0) {
+        alert('Ninguno de los productos de esta orden está disponible actualmente');
+        setReorderingOrderId(null);
+        return;
+      }
+
+      if (unavailableItems.length > 0) {
+        const message = `Los siguientes productos no están disponibles y serán omitidos:\n\n${unavailableItems.join('\n')}`;
+        if (!confirm(message + '\n\n¿Deseas continuar agregando los productos disponibles al carrito?')) {
+          setReorderingOrderId(null);
+          return;
+        }
+      }
+
+      navigate('/', {
+        state: {
+          reorderItems: validItems,
+          openCart: true,
+        },
+      });
+    } catch (error) {
+      console.error('Error in handleReorder:', error);
+      alert('Error al procesar la recompra');
+      setReorderingOrderId(null);
+    }
   }
 
   function calculateOrderSummary(order: Order) {
@@ -515,23 +594,35 @@ export function Profile() {
                 </div>
                 <div>
                   <label className="block text-slate-300 text-sm mb-2">Estado</label>
-                  <input
-                    type="text"
+                  <select
                     value={editData.state}
-                    onChange={(e) => setEditData({ ...editData, state: e.target.value })}
+                    onChange={(e) => setEditData({ ...editData, state: e.target.value, city: '' })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
-                  />
+                  >
+                    <option value="">Selecciona un estado</option>
+                    {states.map((state) => (
+                      <option key={state.code} value={state.code}>
+                        {state.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 text-sm mb-2">Ciudad</label>
-                <input
-                  type="text"
-                  value={editData.city}
-                  onChange={(e) => setEditData({ ...editData, city: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
-                />
+                <div>
+                  <label className="block text-slate-300 text-sm mb-2">Ciudad</label>
+                  <select
+                    value={editData.city}
+                    onChange={(e) => setEditData({ ...editData, city: e.target.value })}
+                    disabled={!editData.state}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Selecciona una ciudad</option>
+                    {editData.state && getCitiesByState(editData.state).map((city) => (
+                      <option key={city.name} value={city.name}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -565,11 +656,11 @@ export function Profile() {
               </div>
               <div>
                 <p className="text-slate-400 text-sm mb-1">Estado</p>
-                <p className="text-white">{profile.state}</p>
+                <p className="text-white">{states.find((s) => s.code === profile.state)?.name || profile.state}</p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm mb-1">Ciudad</p>
-                <p className="text-white">{profile.city}</p>
+                <p className="text-white">{profile.city || 'No especificada'}</p>
               </div>
             </div>
           )}
@@ -659,6 +750,23 @@ export function Profile() {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-3 border-t border-slate-700 pt-3">
+                        <button
+                          onClick={() => handleReorder(order)}
+                          disabled={reorderingOrderId === order.id}
+                          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reorderingOrderId === order.id ? (
+                            <>
+                              <LoaderIcon className="w-5 h-5 animate-spin" />
+                              Procesando...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-5 h-5" />
+                              Recomprar
+                            </>
+                          )}
+                        </button>
                         <button
                           onClick={() => handleCopyTracking(order.tracking_code)}
                           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { supabase, Category, Product, Inventory } from './lib/supabase';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
@@ -16,6 +16,7 @@ import { Profile } from './pages/Profile';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function App() {
+  const location = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -47,6 +48,68 @@ function App() {
       authListener?.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.reorderItems && Array.isArray(state.reorderItems) && state.reorderItems.length > 0) {
+      handleReorderItems(state.reorderItems, state.openCart);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, cartItems.length]);
+
+  async function handleReorderItems(reorderItems: Array<{ product_id: string; quantity: number }>, openCart: boolean) {
+    try {
+      if (cartItems.length > 0) {
+        const confirmed = window.confirm(
+          'Ya tienes productos en el carrito. ¿Deseas reemplazarlos con los productos de esta orden?'
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      const productIds = reorderItems.map((item) => item.product_id);
+
+      const { data: fetchedProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', productIds)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        alert('Error al cargar los productos');
+        return;
+      }
+
+      const productsMap = new Map((fetchedProducts || []).map((p) => [p.id, p]));
+      const newCartItems: CartItem[] = [];
+
+      for (const item of reorderItems) {
+        const product = productsMap.get(item.product_id);
+        if (product) {
+          newCartItems.push({
+            product,
+            quantity: item.quantity,
+          });
+        }
+      }
+
+      if (newCartItems.length === 0) {
+        alert('No se pudieron cargar los productos');
+        return;
+      }
+
+      setCartItems(newCartItems);
+
+      if (openCart) {
+        setIsCartOpen(true);
+      }
+    } catch (error) {
+      console.error('Error in handleReorderItems:', error);
+      alert('Error al procesar la recompra');
+    }
+  }
 
   async function checkUser() {
     const { data: { user } } = await supabase.auth.getUser();
