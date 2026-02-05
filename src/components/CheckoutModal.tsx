@@ -132,6 +132,38 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
     }
   }
 
+  async function saveUserProfile() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user || isGuest) return;
+
+      const stateName = states.find((s) => s.code === formData.state)?.name || formData.state;
+
+      const profileData = {
+        id: user.id,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        cedula: formData.cedula,
+        phone: formData.customer_phone,
+        country: 'Venezuela',
+        state: stateName,
+        city: formData.city,
+        address_line1: formData.address || null,
+      };
+
+      const { error } = await supabase
+        .from('customer_profiles')
+        .upsert(profileData, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Error saving profile:', error);
+      }
+    } catch (error) {
+      console.error('Error in saveUserProfile:', error);
+    }
+  }
+
   async function calculateShipping() {
     try {
       const stateName = states.find((s) => s.code === formData.state)?.name;
@@ -281,6 +313,8 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
       if (!responseData.success) {
         throw new Error(responseData.error || 'Error al crear la orden');
       }
+
+      await saveUserProfile();
 
       setError(null);
       setTrackingCode(responseData.tracking_code);

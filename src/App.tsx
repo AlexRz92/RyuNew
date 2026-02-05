@@ -153,7 +153,12 @@ function App() {
 
   const handleCheckout = () => {
     setIsCartOpen(false);
-    setIsCheckoutTypeOpen(true);
+    if (user) {
+      setIsGuestCheckout(false);
+      setIsCheckoutOpen(true);
+    } else {
+      setIsCheckoutTypeOpen(true);
+    }
   };
 
   const handleGuestCheckout = () => {
