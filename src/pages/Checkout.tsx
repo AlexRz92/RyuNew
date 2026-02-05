@@ -296,7 +296,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   if (items.length === 0 && !success) {
     return (
       <>
-        <Header onSearch={() => {}} searchQuery="" user={null} />
+        <Header />
         <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
           <div className="container mx-auto px-4 max-w-2xl">
             <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8">
@@ -318,7 +318,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   if (success) {
     return (
       <>
-        <Header onSearch={() => {}} searchQuery="" user={null} />
+        <Header />
         <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
           <div className="container mx-auto px-4 max-w-2xl">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-amber-500/30 rounded-xl p-8 text-center shadow-2xl">

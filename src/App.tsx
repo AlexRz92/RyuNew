@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { supabase, Category, Product, Inventory } from './lib/supabase';
+import { useAuth } from './contexts/AuthContext';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { ProductCard } from './components/ProductCard';
@@ -18,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 
 function App() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -32,26 +34,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState<any>(null);
+  const [isLoginFromCheckout, setIsLoginFromCheckout] = useState(false);
   const productsPerPage = 10;
 
   useEffect(() => {
     fetchData();
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
   }, []);
-
-  async function checkUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-  }
 
   async function fetchData() {
     try {
@@ -173,12 +161,21 @@ function App() {
 
   const handleLoginCheckout = () => {
     setIsCheckoutTypeOpen(false);
+    setIsLoginFromCheckout(true);
+    setIsLoginOpen(true);
+  };
+
+  const handleHeaderLogin = () => {
+    setIsLoginFromCheckout(false);
     setIsLoginOpen(true);
   };
 
   const handleLoginSuccess = () => {
     setIsLoginOpen(false);
-    navigate('/checkout');
+    if (isLoginFromCheckout) {
+      navigate('/checkout');
+    }
+    setIsLoginFromCheckout(false);
   };
 
   const handleClearCart = () => {
@@ -213,7 +210,7 @@ function App() {
         <Route path="/checkout" element={<Checkout items={cartItems} onClearCart={handleClearCart} />} />
         <Route path="/" element={
           <>
-      <Header onSearch={handleSearchChange} searchQuery={searchQuery} user={user} />
+      <Header onSearch={handleSearchChange} searchQuery={searchQuery} onLoginClick={handleHeaderLogin} />
 
       <main className="container mx-auto px-4 py-8 pb-32 max-w-[1800px]">
         {categories.length > 0 && (

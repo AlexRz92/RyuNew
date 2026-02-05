@@ -1,26 +1,36 @@
-import { Search, User } from 'lucide-react';
+import { Search, User, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
   searchQuery?: string;
-  user?: any;
+  onLoginClick?: () => void;
 }
 
-export function Header({ onSearch, searchQuery = '', user }: HeaderProps) {
+export function Header({ onSearch, searchQuery = '', onLoginClick }: HeaderProps) {
+  const { user } = useAuth();
   return (
     <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 w-full">
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1" />
-          {user && (
+          {user ? (
             <Link
               to="/perfil"
-              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors px-4 py-2 rounded-lg hover:bg-slate-800/50"
+              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
             >
               <User className="w-5 h-5" />
-              <span className="text-sm font-medium">Mi Perfil</span>
+              <span className="text-sm">Mi Perfil</span>
             </Link>
+          ) : (
+            <button
+              onClick={onLoginClick}
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
+            >
+              <LogIn className="w-5 h-5" />
+              <span className="text-sm">Iniciar sesión</span>
+            </button>
           )}
         </div>
         <div className="flex justify-center mb-6">

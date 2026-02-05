@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, OrderItem, Product } from '../lib/supabase';
 import { LogOut, Copy, Check, Download, ShoppingBag, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
 import { ReplaceCartModal } from '../components/ReplaceCartModal';
@@ -52,6 +53,7 @@ interface ProfileProps {
 
 export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,30 +62,29 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
   const [editData, setEditData] = useState<CustomerProfile | null>(null);
   const [copiedTrackingCode, setCopiedTrackingCode] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<boolean | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isReplaceCartModalOpen, setIsReplaceCartModalOpen] = useState(false);
   const [pendingReorderItems, setPendingReorderItems] = useState<Array<{ product: Product; quantity: number }> | null>(null);
 
   useEffect(() => {
-    checkAuthentication();
-  }, []);
+    if (authLoading) return;
 
-  async function checkAuthentication() {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    fetchProfileAndOrders(user.id);
+  }, [user, authLoading]);
+
+  async function fetchProfileAndOrders(userId: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsAuthenticatedUser(false);
-        setLoading(false);
-        return;
-      }
-
-      setIsAuthenticatedUser(true);
-      await fetchProfile(user.id);
-      await fetchOrders(user.id);
-    } catch (error) {
-      console.error('Error checking authentication:', error);
-      setIsAuthenticatedUser(false);
+      setLoading(true);
+      await Promise.all([
+        fetchProfile(userId),
+        fetchOrders(userId)
+      ]);
+    } finally {
       setLoading(false);
     }
   }
@@ -188,7 +189,6 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
 
   async function handleLoginSuccess() {
     setIsLoginOpen(false);
-    await checkAuthentication();
   }
 
   async function handleReorder(order: Order) {
@@ -451,7 +451,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
     setExpandedOrderId(orderId);
   }
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
         <div className="text-center">
@@ -461,10 +461,10 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
     );
   }
 
-  if (isAuthenticatedUser === false) {
+  if (!user) {
     return (
       <>
-        <Header user={null} />
+        <Header onLoginClick={() => setIsLoginOpen(true)} />
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
           <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 max-w-md mx-4">
             <p className="text-slate-400 mb-6">Inicia sesión para ver tu perfil y tus compras</p>
@@ -488,7 +488,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
   if (!profile) {
     return (
       <>
-        <Header user={null} />
+        <Header />
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
           <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 max-w-md mx-4">
             <p className="text-slate-400 mb-6">No se encontró el perfil</p>
@@ -507,7 +507,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
 
   return (
     <>
-      <Header user={null} />
+      <Header />
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
