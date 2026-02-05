@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { LogOut, Copy, Check, Download, ShoppingBag } from 'lucide-react';
+import { LogOut, Copy, Check, Download, ShoppingBag, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
+
+const formatUSD = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount || 0);
+};
 
 interface CustomerProfile {
   id: string;
@@ -26,7 +35,7 @@ interface Order {
   id: string;
   tracking_code: string;
   status: string;
-  total: number;
+  total_amount: number;
   created_at: string;
   items?: OrderItem[];
 }
@@ -43,6 +52,7 @@ export function Profile() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<boolean | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [invoiceOrderId, setInvoiceOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthentication();
@@ -168,6 +178,117 @@ export function Profile() {
   async function handleLoginSuccess() {
     setIsLoginOpen(false);
     await checkAuthentication();
+  }
+
+  function generateInvoiceHTML(order: Order) {
+    const orderDate = new Date(order.created_at).toLocaleDateString('es-VE');
+    const itemsHTML = (order.items || []).map(item => `
+      <tr>
+        <td style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Producto'}</td>
+        <td style="padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
+        <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${formatUSD(item.unit_price || 0)}</td>
+        <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${formatUSD((item.unit_price || 0) * item.quantity)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Factura ${order.tracking_code}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+          .invoice { max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1e293b; padding-bottom: 20px; }
+          .header h1 { margin: 0; color: #1e293b; font-size: 32px; }
+          .header p { margin: 5px 0; color: #64748b; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+          .info-box { background: #f8fafc; padding: 15px; border-left: 4px solid #f97316; }
+          .info-box label { font-weight: bold; color: #1e293b; display: block; margin-bottom: 5px; }
+          .info-box p { margin: 0; color: #475569; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th { background: #1e293b; color: white; padding: 12px; text-align: left; }
+          .total-section { text-align: right; margin: 30px 0; }
+          .total-amount { font-size: 24px; font-weight: bold; color: #1e293b; margin: 10px 0; }
+          .footer { text-align: center; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; color: #64748b; font-size: 12px; }
+          .status { display: inline-block; padding: 6px 12px; border-radius: 4px; font-weight: bold; margin: 10px 0; }
+          .status.pending { background: #fef3c7; color: #92400e; }
+          .status.confirmed { background: #dbeafe; color: #0c4a6e; }
+          .status.completed { background: #dcfce7; color: #166534; }
+          .status.cancelled { background: #fee2e2; color: #991b1b; }
+        </style>
+      </head>
+      <body>
+        <div class="invoice">
+          <div class="header">
+            <h1>Ferretería RYU</h1>
+            <p>Factura de Venta</p>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <label>Número de Tracking:</label>
+              <p>${order.tracking_code}</p>
+            </div>
+            <div class="info-box">
+              <label>Fecha:</label>
+              <p>${orderDate}</p>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <label>Cliente:</label>
+              <p>${profile?.first_name} ${profile?.last_name}</p>
+              <p style="margin-top: 8px; font-size: 14px;">${profile?.phone || 'N/A'}</p>
+            </div>
+            <div class="info-box">
+              <label>Estado:</label>
+              <div class="status ${order.status}">${order.status.toUpperCase()}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align: center;">Cantidad</th>
+                <th style="text-align: right;">Precio Unitario</th>
+                <th style="text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHTML}
+            </tbody>
+          </table>
+
+          <div class="total-section">
+            <div style="font-size: 14px; color: #64748b;">TOTAL A PAGAR:</div>
+            <div class="total-amount">${formatUSD(order.total_amount || 0)}</div>
+          </div>
+
+          <div class="footer">
+            <p>Gracias por su compra</p>
+            <p>Ferretería RYU - Todos los derechos reservados</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  function handleDownloadInvoice(order: Order) {
+    const html = generateInvoiceHTML(order);
+    const printWindow = window.open('', '', 'height=800,width=900');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
   }
 
   async function toggleOrderDetails(orderId: string) {
@@ -369,35 +490,39 @@ export function Profile() {
             Mis Compras
           </h2>
 
-          {orders.length === 0 ? (
+          {!orders || orders.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No tienes compras registradas</p>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
+              {(orders || []).map((order) => (
                 <div key={order.id} className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => toggleOrderDetails(order.id)}
-                    className="w-full p-4 flex justify-between items-center hover:bg-slate-800/50 transition-colors text-left"
-                  >
-                    <div className="flex-1">
-                      <p className="text-white font-semibold">Código: {order.tracking_code}</p>
-                      <div className="grid grid-cols-3 gap-4 mt-2 text-sm text-slate-400">
-                        <div>
-                          <p className="text-slate-500">Estado</p>
-                          <p className="text-white capitalize">{order.status}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-500">Total</p>
-                          <p className="text-white">Bs {order.total.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-500">Fecha</p>
-                          <p className="text-white">{new Date(order.created_at).toLocaleDateString('es-VE')}</p>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <p className="text-white font-semibold">Código: {order.tracking_code}</p>
+                        <div className="grid grid-cols-3 gap-4 mt-2 text-sm text-slate-400">
+                          <div>
+                            <p className="text-slate-500">Estado</p>
+                            <p className="text-white capitalize">{order.status}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Total</p>
+                            <p className="text-white">{formatUSD(order.total_amount ?? 0)}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Fecha</p>
+                            <p className="text-white">{new Date(order.created_at).toLocaleDateString('es-VE')}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <span className="text-slate-400">{expandedOrderId === order.id ? '▼' : '▶'}</span>
-                  </button>
+                    <button
+                      onClick={() => toggleOrderDetails(order.id)}
+                      className="text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded transition-colors"
+                    >
+                      {expandedOrderId === order.id ? 'Ocultar detalles' : 'Ver detalles'}
+                    </button>
+                  </div>
 
                   {expandedOrderId === order.id && order.items && (
                     <div className="bg-slate-800/50 border-t border-slate-700 p-4">
@@ -405,7 +530,7 @@ export function Profile() {
                         {order.items.map((item) => (
                           <div key={item.id} className="flex justify-between text-sm text-slate-300 bg-slate-900 p-3 rounded">
                             <span>{item.product_name || 'Producto'} (x{item.quantity})</span>
-                            <span>Bs {(item.unit_price * item.quantity).toFixed(2)}</span>
+                            <span>{formatUSD((item.unit_price || 0) * item.quantity)}</span>
                           </div>
                         ))}
                       </div>
@@ -426,6 +551,13 @@ export function Profile() {
                               Copiar tracking
                             </>
                           )}
+                        </button>
+                        <button
+                          onClick={() => handleDownloadInvoice(order)}
+                          className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors"
+                        >
+                          <Download className="w-5 h-5" />
+                          Descargar factura (PDF)
                         </button>
                       </div>
                     </div>
