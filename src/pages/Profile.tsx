@@ -180,11 +180,21 @@ export function Profile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-400">No se encontró el perfil</p>
+      <>
+        <Header user={null} />
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
+          <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 max-w-md mx-4">
+            <p className="text-slate-400 mb-6">No se encontró el perfil</p>
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors w-full"
+            >
+              <LogOut className="w-5 h-5" />
+              Cerrar sesión
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
