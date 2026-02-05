@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export function Header({ onSearch, searchQuery = '', user }: HeaderProps) {
   return (
-    <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 sticky top-0 left-0 right-0 z-40 w-full">
+    <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 w-full">
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1" />
@@ -33,7 +33,7 @@ export function Header({ onSearch, searchQuery = '', user }: HeaderProps) {
             <img
               src="/ferreteria.png"
               alt="Ferretería Ryu"
-              className="h-6 md:h-8 lg:h-10 w-auto object-contain"
+              className="h-8 md:h-12 lg:h-16 w-auto object-contain"
             />
           </div>
         </div>
