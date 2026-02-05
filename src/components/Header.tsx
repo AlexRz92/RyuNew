@@ -1,14 +1,28 @@
-import { Search } from 'lucide-react';
+import { Search, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
   searchQuery?: string;
+  user?: any;
 }
 
-export function Header({ onSearch, searchQuery = '' }: HeaderProps) {
+export function Header({ onSearch, searchQuery = '', user }: HeaderProps) {
   return (
-    <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 sticky top-0 z-40">
+    <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 sticky top-0 left-0 right-0 z-40 w-full">
       <div className="container mx-auto px-4 py-6 md:py-8">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex-1" />
+          {user && (
+            <Link
+              to="/perfil"
+              className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors px-4 py-2 rounded-lg hover:bg-slate-800/50"
+            >
+              <User className="w-5 h-5" />
+              <span className="text-sm font-medium">Mi Perfil</span>
+            </Link>
+          )}
+        </div>
         <div className="flex justify-center mb-6">
           <div className="flex flex-col items-center gap-3">
             <img

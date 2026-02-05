@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { supabase, Category, Product, Inventory } from './lib/supabase';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
@@ -11,6 +12,7 @@ import { TrackOrderModal } from './components/TrackOrderModal';
 import { FloatingButtons } from './components/FloatingButtons';
 import { FeaturedProducts } from './components/FeaturedProducts';
 import { ProductDetailModal } from './components/ProductDetailModal';
+import { Profile } from './pages/Profile';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function App() {
@@ -30,11 +32,26 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const productsPerPage = 10;
 
   useEffect(() => {
     fetchData();
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
+
+  async function checkUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+  }
 
   async function fetchData() {
     try {
@@ -185,7 +202,11 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-      <Header onSearch={handleSearchChange} searchQuery={searchQuery} />
+      <Routes>
+        <Route path="/perfil" element={<Profile />} />
+        <Route path="/" element={
+          <>
+      <Header onSearch={handleSearchChange} searchQuery={searchQuery} user={user} />
 
       <main className="container mx-auto px-4 py-8 pb-32 max-w-[1800px]">
         {categories.length > 0 && (
@@ -348,6 +369,9 @@ function App() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
+          </>
+        } />
+      </Routes>
     </div>
   );
 }

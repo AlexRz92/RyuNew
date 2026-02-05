@@ -64,23 +64,36 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-        });
-
-        if (signUpError) throw signUpError;
-
-        if (data.user) {
-          const { error: profileError } = await supabase
-            .from('customer_profiles')
-            .insert({
-              id: data.user.id,
+          options: {
+            data: {
               first_name: profileData.first_name,
               last_name: profileData.last_name,
               phone: profileData.phone,
               state: profileData.state,
               city: profileData.city,
-            });
+            }
+          }
+        });
 
-          if (profileError) throw profileError;
+        if (signUpError) throw signUpError;
+
+        if (data.user) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          const { error: profileError } = await supabase
+            .from('customer_profiles')
+            .update({
+              first_name: profileData.first_name,
+              last_name: profileData.last_name,
+              phone: profileData.phone,
+              state: profileData.state,
+              city: profileData.city,
+            })
+            .eq('id', data.user.id);
+
+          if (profileError) {
+            console.error('Error updating profile:', profileError);
+          }
         }
 
         onLoginSuccess();
@@ -244,6 +257,15 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
               onClick={() => {
                 setIsLogin(!isLogin);
                 setError(null);
+                setEmail('');
+                setPassword('');
+                setProfileData({
+                  first_name: '',
+                  last_name: '',
+                  phone: '',
+                  state: '',
+                  city: '',
+                });
               }}
               className="text-amber-400 hover:text-amber-300 text-sm transition-colors"
             >
