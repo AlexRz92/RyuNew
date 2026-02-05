@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, OrderItem } from '../lib/supabase';
-import { LogOut, Copy, Check, Download, ShoppingBag, X } from 'lucide-react';
+import { LogOut, Copy, Check, Download, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
@@ -56,7 +56,6 @@ export function Profile() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<boolean | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [invoiceOrderId, setInvoiceOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthentication();
@@ -184,6 +183,22 @@ export function Profile() {
     await checkAuthentication();
   }
 
+  function calculateOrderSummary(order: Order) {
+    const items = order.items || [];
+
+    const subtotal = items.reduce((sum, item) => {
+      const unitPrice = item.product_price || 0;
+      const itemSubtotal = item.subtotal || (unitPrice * item.quantity);
+      return sum + itemSubtotal;
+    }, 0);
+
+    const iva = subtotal * 0.19;
+    const shipping = 0;
+    const total = subtotal + iva + shipping;
+
+    return { subtotal, iva, shipping, total };
+  }
+
   function generateInvoiceHTML(order: Order) {
     const orderDate = new Date(order.created_at).toLocaleDateString('es-VE');
     const itemsHTML = (order.items || []).map(item => {
@@ -201,6 +216,8 @@ export function Profile() {
       </tr>
       `;
     }).join('');
+
+    const { subtotal, iva, shipping, total } = calculateOrderSummary(order);
 
     return `
       <!DOCTYPE html>
@@ -275,8 +292,26 @@ export function Profile() {
           </table>
 
           <div class="total-section">
-            <div style="font-size: 14px; color: #64748b;">TOTAL A PAGAR:</div>
-            <div class="total-amount">${formatUSDForTotal(order.total_amount)}</div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+              <div style="width: 300px;">
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-size: 14px;">
+                  <span style="color: #475569;">Subtotal:</span>
+                  <span style="color: #1e293b; font-weight: 600;">${formatUSDForTotal(subtotal)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-size: 14px;">
+                  <span style="color: #475569;">IVA (19%):</span>
+                  <span style="color: #1e293b; font-weight: 600;">${formatUSDForTotal(iva)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-size: 14px;">
+                  <span style="color: #475569;">Envío:</span>
+                  <span style="color: #1e293b; font-weight: 600;">${formatUSDForTotal(shipping)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; margin-top: 8px; font-size: 16px; font-weight: bold;">
+                  <span style="color: #1e293b;">TOTAL A PAGAR:</span>
+                  <span style="color: #f97316; font-size: 20px;">${formatUSDForTotal(total)}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="footer">
@@ -291,15 +326,51 @@ export function Profile() {
 
   function handleDownloadInvoice(order: Order) {
     const html = generateInvoiceHTML(order);
-    const printWindow = window.open('', '', 'height=800,width=900');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      console.error('No se pudo acceder al documento del iframe');
+      document.body.removeChild(iframe);
+      return;
     }
+
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error al imprimir:', error);
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }
+    };
+
+    setTimeout(() => {
+      if (iframe.contentDocument?.readyState === 'complete') {
+        iframe.onload?.(new Event('load'));
+      }
+    }, 10);
   }
 
   async function toggleOrderDetails(orderId: string) {
@@ -552,7 +623,33 @@ export function Profile() {
                         })}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-slate-700">
+                      <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-4">
+                        {(() => {
+                          const { subtotal, iva, shipping, total } = calculateOrderSummary(order);
+                          return (
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between text-slate-300">
+                                <span>Subtotal:</span>
+                                <span>{formatUSDForTotal(subtotal)}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-300">
+                                <span>IVA (19%):</span>
+                                <span>{formatUSDForTotal(iva)}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-300">
+                                <span>Envío:</span>
+                                <span>{formatUSDForTotal(shipping)}</span>
+                              </div>
+                              <div className="flex justify-between text-white font-semibold border-t border-slate-600 pt-2 mt-2">
+                                <span>Total:</span>
+                                <span>{formatUSDForTotal(total)}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 border-t border-slate-700 pt-3">
                         <button
                           onClick={() => handleCopyTracking(order.tracking_code)}
                           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
