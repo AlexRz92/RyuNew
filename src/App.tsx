@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { supabase, Category, Product, Inventory } from './lib/supabase';
 import { Header } from './components/Header';
 import { CategoryFilter } from './components/CategoryFilter';
 import { ProductCard } from './components/ProductCard';
 import { Cart, CartItem } from './components/Cart';
-import { CheckoutModal } from './components/CheckoutModal';
 import { CheckoutTypeModal } from './components/CheckoutTypeModal';
 import { LoginModal } from './components/LoginModal';
 import { TrackOrderModal } from './components/TrackOrderModal';
@@ -13,10 +12,12 @@ import { FloatingButtons } from './components/FloatingButtons';
 import { FeaturedProducts } from './components/FeaturedProducts';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { Profile } from './pages/Profile';
+import { Checkout } from './pages/Checkout';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function App() {
-  const location = useLocation();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -26,13 +27,11 @@ function App() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutTypeOpen, setIsCheckoutTypeOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTrackOrderOpen, setIsTrackOrderOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
   const [user, setUser] = useState<any>(null);
   const productsPerPage = 10;
 
@@ -48,68 +47,6 @@ function App() {
       authListener?.subscription.unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    const state = location.state as any;
-    if (state?.reorderItems && Array.isArray(state.reorderItems) && state.reorderItems.length > 0) {
-      handleReorderItems(state.reorderItems, state.openCart);
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state, cartItems.length]);
-
-  async function handleReorderItems(reorderItems: Array<{ product_id: string; quantity: number }>, openCart: boolean) {
-    try {
-      if (cartItems.length > 0) {
-        const confirmed = window.confirm(
-          'Ya tienes productos en el carrito. ¿Deseas reemplazarlos con los productos de esta orden?'
-        );
-        if (!confirmed) {
-          return;
-        }
-      }
-
-      const productIds = reorderItems.map((item) => item.product_id);
-
-      const { data: fetchedProducts, error } = await supabase
-        .from('products')
-        .select('*')
-        .in('id', productIds)
-        .eq('is_active', true);
-
-      if (error) {
-        console.error('Error fetching products:', error);
-        alert('Error al cargar los productos');
-        return;
-      }
-
-      const productsMap = new Map((fetchedProducts || []).map((p) => [p.id, p]));
-      const newCartItems: CartItem[] = [];
-
-      for (const item of reorderItems) {
-        const product = productsMap.get(item.product_id);
-        if (product) {
-          newCartItems.push({
-            product,
-            quantity: item.quantity,
-          });
-        }
-      }
-
-      if (newCartItems.length === 0) {
-        alert('No se pudieron cargar los productos');
-        return;
-      }
-
-      setCartItems(newCartItems);
-
-      if (openCart) {
-        setIsCartOpen(true);
-      }
-    } catch (error) {
-      console.error('Error in handleReorderItems:', error);
-      alert('Error al procesar la recompra');
-    }
-  }
 
   async function checkUser() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -216,11 +153,14 @@ function App() {
     setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
+  const replaceCart = (items: Array<{ product: Product; quantity: number }>) => {
+    setCartItems(items);
+  };
+
   const handleCheckout = () => {
     setIsCartOpen(false);
     if (user) {
-      setIsGuestCheckout(false);
-      setIsCheckoutOpen(true);
+      navigate('/checkout');
     } else {
       setIsCheckoutTypeOpen(true);
     }
@@ -228,8 +168,7 @@ function App() {
 
   const handleGuestCheckout = () => {
     setIsCheckoutTypeOpen(false);
-    setIsGuestCheckout(true);
-    setIsCheckoutOpen(true);
+    navigate('/checkout');
   };
 
   const handleLoginCheckout = () => {
@@ -239,14 +178,11 @@ function App() {
 
   const handleLoginSuccess = () => {
     setIsLoginOpen(false);
-    setIsGuestCheckout(false);
-    setIsCheckoutOpen(true);
+    navigate('/checkout');
   };
 
-  const handleCheckoutSuccess = () => {
+  const handleClearCart = () => {
     setCartItems([]);
-    setIsCheckoutOpen(false);
-    setIsGuestCheckout(false);
   };
 
   const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -273,7 +209,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
       <Routes>
-        <Route path="/perfil" element={<Profile />} />
+        <Route path="/perfil" element={<Profile cartItemsCount={totalCartItems} onReplaceCart={replaceCart} />} />
+        <Route path="/checkout" element={<Checkout items={cartItems} onClearCart={handleClearCart} />} />
         <Route path="/" element={
           <>
       <Header onSearch={handleSearchChange} searchQuery={searchQuery} user={user} />
@@ -418,14 +355,6 @@ function App() {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         onLoginSuccess={handleLoginSuccess}
-      />
-
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        items={cartItems}
-        onSuccess={handleCheckoutSuccess}
-        isGuest={isGuestCheckout}
       />
 
       <TrackOrderModal

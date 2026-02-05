@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase, OrderItem } from '../lib/supabase';
-import { LogOut, Copy, Check, Download, ShoppingBag, RefreshCw, Loader2 as LoaderIcon } from 'lucide-react';
+import { supabase, OrderItem, Product } from '../lib/supabase';
+import { LogOut, Copy, Check, Download, ShoppingBag, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
-import { states, getCitiesByState } from '../data/venezuelaData';
+import { ReplaceCartModal } from '../components/ReplaceCartModal';
 
 const formatUSD = (amount: number | null | undefined) => {
   if (amount === null || amount === undefined || amount === 0) {
@@ -45,7 +45,12 @@ interface Order {
   items?: OrderItem[];
 }
 
-export function Profile() {
+interface ProfileProps {
+  cartItemsCount: number;
+  onReplaceCart: (products: Array<{ product: Product; quantity: number }>) => void;
+}
+
+export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -57,7 +62,8 @@ export function Profile() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<boolean | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [reorderingOrderId, setReorderingOrderId] = useState<string | null>(null);
+  const [isReplaceCartModalOpen, setIsReplaceCartModalOpen] = useState(false);
+  const [pendingReorderItems, setPendingReorderItems] = useState<Array<{ product: Product; quantity: number }> | null>(null);
 
   useEffect(() => {
     checkAuthentication();
@@ -187,78 +193,56 @@ export function Profile() {
 
   async function handleReorder(order: Order) {
     try {
-      setReorderingOrderId(order.id);
-
       if (!order.items || order.items.length === 0) {
         const items = await fetchOrderItems(order.id);
         order.items = items;
       }
 
-      if (!order.items || order.items.length === 0) {
-        alert('No se pudieron cargar los productos de esta orden');
-        setReorderingOrderId(null);
-        return;
-      }
-
-      const productIds = order.items.map((item) => item.product_id);
-
+      const productIds = order.items.map(item => item.product_id);
       const { data: products, error } = await supabase
         .from('products')
-        .select('id, name, price, is_active')
-        .in('id', productIds);
+        .select('*')
+        .in('id', productIds)
+        .eq('is_active', true);
 
-      if (error) {
-        console.error('Error fetching products:', error);
-        alert('Error al validar los productos');
-        setReorderingOrderId(null);
+      if (error) throw error;
+
+      if (!products || products.length === 0) {
+        alert('Los productos de esta orden ya no están disponibles');
         return;
       }
 
-      const activeProductsMap = new Map(
-        (products || [])
-          .filter((p) => p.is_active)
-          .map((p) => [p.id, p])
-      );
+      const reorderItems = order.items
+        .map(item => {
+          const product = products.find(p => p.id === item.product_id);
+          if (!product) return null;
+          return { product, quantity: item.quantity };
+        })
+        .filter((item): item is { product: Product; quantity: number } => item !== null);
 
-      const validItems = [];
-      const unavailableItems = [];
-
-      for (const item of order.items) {
-        const product = activeProductsMap.get(item.product_id);
-        if (product) {
-          validItems.push({
-            product_id: item.product_id,
-            quantity: item.quantity,
-          });
-        } else {
-          unavailableItems.push(item.product_name);
-        }
-      }
-
-      if (validItems.length === 0) {
-        alert('Ninguno de los productos de esta orden está disponible actualmente');
-        setReorderingOrderId(null);
+      if (reorderItems.length === 0) {
+        alert('Los productos de esta orden ya no están disponibles');
         return;
       }
 
-      if (unavailableItems.length > 0) {
-        const message = `Los siguientes productos no están disponibles y serán omitidos:\n\n${unavailableItems.join('\n')}`;
-        if (!confirm(message + '\n\n¿Deseas continuar agregando los productos disponibles al carrito?')) {
-          setReorderingOrderId(null);
-          return;
-        }
+      if (cartItemsCount > 0) {
+        setPendingReorderItems(reorderItems);
+        setIsReplaceCartModalOpen(true);
+      } else {
+        onReplaceCart(reorderItems);
+        navigate('/');
       }
-
-      navigate('/', {
-        state: {
-          reorderItems: validItems,
-          openCart: true,
-        },
-      });
     } catch (error) {
-      console.error('Error in handleReorder:', error);
-      alert('Error al procesar la recompra');
-      setReorderingOrderId(null);
+      console.error('Error reordering:', error);
+      alert('Hubo un error al recomprar. Por favor intenta nuevamente.');
+    }
+  }
+
+  function handleConfirmReplace() {
+    if (pendingReorderItems) {
+      onReplaceCart(pendingReorderItems);
+      setPendingReorderItems(null);
+      navigate('/');
     }
   }
 
@@ -594,35 +578,23 @@ export function Profile() {
                 </div>
                 <div>
                   <label className="block text-slate-300 text-sm mb-2">Estado</label>
-                  <select
+                  <input
+                    type="text"
                     value={editData.state}
-                    onChange={(e) => setEditData({ ...editData, state: e.target.value, city: '' })}
+                    onChange={(e) => setEditData({ ...editData, state: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">Selecciona un estado</option>
-                    {states.map((state) => (
-                      <option key={state.code} value={state.code}>
-                        {state.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Ciudad</label>
-                  <select
-                    value={editData.city}
-                    onChange={(e) => setEditData({ ...editData, city: e.target.value })}
-                    disabled={!editData.state}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Selecciona una ciudad</option>
-                    {editData.state && getCitiesByState(editData.state).map((city) => (
-                      <option key={city.name} value={city.name}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm mb-2">Ciudad</label>
+                <input
+                  type="text"
+                  value={editData.city}
+                  onChange={(e) => setEditData({ ...editData, city: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                />
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -656,11 +628,11 @@ export function Profile() {
               </div>
               <div>
                 <p className="text-slate-400 text-sm mb-1">Estado</p>
-                <p className="text-white">{states.find((s) => s.code === profile.state)?.name || profile.state}</p>
+                <p className="text-white">{profile.state}</p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm mb-1">Ciudad</p>
-                <p className="text-white">{profile.city || 'No especificada'}</p>
+                <p className="text-white">{profile.city}</p>
               </div>
             </div>
           )}
@@ -752,20 +724,10 @@ export function Profile() {
                       <div className="flex flex-col sm:flex-row gap-3 border-t border-slate-700 pt-3">
                         <button
                           onClick={() => handleReorder(order)}
-                          disabled={reorderingOrderId === order.id}
-                          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
                         >
-                          {reorderingOrderId === order.id ? (
-                            <>
-                              <LoaderIcon className="w-5 h-5 animate-spin" />
-                              Procesando...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="w-5 h-5" />
-                              Recomprar
-                            </>
-                          )}
+                          <RefreshCw className="w-5 h-5" />
+                          Recomprar
                         </button>
                         <button
                           onClick={() => handleCopyTracking(order.tracking_code)}
@@ -800,6 +762,15 @@ export function Profile() {
         </div>
         </div>
       </div>
+      <ReplaceCartModal
+        isOpen={isReplaceCartModalOpen}
+        onClose={() => {
+          setIsReplaceCartModalOpen(false);
+          setPendingReorderItems(null);
+        }}
+        onConfirm={handleConfirmReplace}
+        currentCartCount={cartItemsCount}
+      />
     </>
   );
 }
