@@ -113,13 +113,15 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
           .maybeSingle();
 
         if (profile) {
+          const stateCode = states.find((s) => s.name === profile.state)?.code || '';
+
           setFormData({
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             cedula: profile.cedula || '',
             customer_email: user.email || '',
             customer_phone: profile.phone || '',
-            state: profile.state || '',
+            state: stateCode,
             city: profile.city || '',
             address: profile.address_line1 || '',
           });
@@ -374,11 +376,11 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl w-full max-w-2xl my-8 shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-amber-500/20">
+      <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl w-full max-w-2xl shadow-2xl flex flex-col" style={{ maxHeight: '90vh' }}>
+        <div className="flex items-center justify-between p-6 border-b border-amber-500/20 flex-shrink-0">
           <h2 className="text-2xl font-bold text-white">Finalizar Compra</h2>
           <button
             onClick={onClose}
@@ -388,7 +390,8 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
+          <div className="p-6 space-y-6">
           <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-4">
             <h3 className="text-amber-400 font-semibold mb-3">Resumen del Pedido</h3>
             <div className="space-y-2 mb-4">
@@ -466,28 +469,30 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
               </div>
             </div>
 
-            <div>
-              <label className="block text-slate-300 text-sm mb-2">Cédula *</label>
-              <input
-                type="text"
-                required
-                value={formData.cedula}
-                onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
-                placeholder="V-12345678"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 text-sm mb-2">Cédula *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.cedula}
+                  onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  placeholder="V-12345678"
+                />
+              </div>
 
-            <div>
-              <label className="block text-slate-300 text-sm mb-2">Teléfono *</label>
-              <input
-                type="tel"
-                required
-                value={formData.customer_phone}
-                onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
-                placeholder="0424-1234567"
-              />
+              <div>
+                <label className="block text-slate-300 text-sm mb-2">Teléfono *</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.customer_phone}
+                  onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  placeholder="0424-1234567"
+                />
+              </div>
             </div>
 
             <div>
@@ -591,26 +596,27 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
             </div>
           </div>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !proofFile}
-            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Procesando...
-              </>
-            ) : (
-              'Confirmar Pedido'
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
             )}
-          </button>
+
+            <button
+              type="submit"
+              disabled={loading || !proofFile}
+              className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                'Confirmar Pedido'
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
