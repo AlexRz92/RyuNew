@@ -247,7 +247,8 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const totalAmount = subtotal + shippingCost;
+    const iva = subtotal * 0.19;
+    const totalAmount = subtotal + iva + shippingCost;
 
     const authHeader = req.headers.get("Authorization");
     let userId = null;
@@ -326,6 +327,7 @@ Deno.serve(async (req: Request) => {
         tracking_code: order.tracking_code,
         order_id: order.id,
         subtotal: subtotal,
+        iva: iva,
         shipping_cost: shippingCost,
         total_amount: totalAmount,
         message: "Orden creada exitosamente",

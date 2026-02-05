@@ -110,19 +110,16 @@ function App() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    document.getElementById('products-listing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleCategoryChange = (cat: string | null) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
-    document.getElementById('products-listing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
-    document.getElementById('products-listing')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const addToCart = (product: Product, quantity: number = 1) => {
