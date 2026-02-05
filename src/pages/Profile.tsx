@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, OrderItem } from '../lib/supabase';
 import { LogOut, Copy, Check, Download, ShoppingBag, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
 
-const formatUSD = (amount: number) => {
+const formatUSD = (amount: number | null | undefined) => {
+  if (amount === null || amount === undefined || amount === 0) {
+    return '—';
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
+const formatUSDForTotal = (amount: number | null | undefined) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -21,14 +33,6 @@ interface CustomerProfile {
   phone: string;
   state: string;
   city: string;
-}
-
-interface OrderItem {
-  id: string;
-  product_id: string;
-  quantity: number;
-  unit_price: number;
-  product_name?: string;
 }
 
 interface Order {
@@ -182,14 +186,21 @@ export function Profile() {
 
   function generateInvoiceHTML(order: Order) {
     const orderDate = new Date(order.created_at).toLocaleDateString('es-VE');
-    const itemsHTML = (order.items || []).map(item => `
+    const itemsHTML = (order.items || []).map(item => {
+      const unitPrice = item.product_price || 0;
+      const itemSubtotal = item.subtotal || (unitPrice * item.quantity);
+      const displayPrice = unitPrice > 0 ? formatUSD(unitPrice) : '—';
+      const displaySubtotal = itemSubtotal > 0 ? formatUSD(itemSubtotal) : '—';
+
+      return `
       <tr>
         <td style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb;">${item.product_name || 'Producto'}</td>
         <td style="padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
-        <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${formatUSD(item.unit_price || 0)}</td>
-        <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${formatUSD((item.unit_price || 0) * item.quantity)}</td>
+        <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${displayPrice}</td>
+        <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">${displaySubtotal}</td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
 
     return `
       <!DOCTYPE html>
@@ -265,7 +276,7 @@ export function Profile() {
 
           <div class="total-section">
             <div style="font-size: 14px; color: #64748b;">TOTAL A PAGAR:</div>
-            <div class="total-amount">${formatUSD(order.total_amount || 0)}</div>
+            <div class="total-amount">${formatUSDForTotal(order.total_amount)}</div>
           </div>
 
           <div class="footer">
@@ -507,7 +518,7 @@ export function Profile() {
                           </div>
                           <div>
                             <p className="text-slate-500">Total</p>
-                            <p className="text-white">{formatUSD(order.total_amount ?? 0)}</p>
+                            <p className="text-white">{formatUSDForTotal(order.total_amount)}</p>
                           </div>
                           <div>
                             <p className="text-slate-500">Fecha</p>
@@ -527,12 +538,18 @@ export function Profile() {
                   {expandedOrderId === order.id && order.items && (
                     <div className="bg-slate-800/50 border-t border-slate-700 p-4">
                       <div className="space-y-3 mb-4">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="flex justify-between text-sm text-slate-300 bg-slate-900 p-3 rounded">
-                            <span>{item.product_name || 'Producto'} (x{item.quantity})</span>
-                            <span>{formatUSD((item.unit_price || 0) * item.quantity)}</span>
-                          </div>
-                        ))}
+                        {order.items.map((item) => {
+                          const unitPrice = item.product_price || 0;
+                          const itemSubtotal = item.subtotal || (unitPrice * item.quantity);
+                          const displaySubtotal = itemSubtotal > 0 ? formatUSD(itemSubtotal) : '—';
+
+                          return (
+                            <div key={item.id} className="flex justify-between text-sm text-slate-300 bg-slate-900 p-3 rounded">
+                              <span>{item.product_name || 'Producto'} (x{item.quantity})</span>
+                              <span>{displaySubtotal}</span>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-slate-700">

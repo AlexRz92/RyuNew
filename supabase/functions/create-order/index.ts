@@ -207,14 +207,15 @@ Deno.serve(async (req: Request) => {
       const product = productsMap.get(item.product_id);
       if (!product) continue;
 
-      const itemSubtotal = product.price * item.quantity;
+      const unitPrice = Number(product.price) || 0;
+      const itemSubtotal = unitPrice * item.quantity;
       subtotal += itemSubtotal;
 
       orderItems.push({
         product_id: product.id,
         product_name: product.name,
         product_sku: product.sku,
-        product_price: product.price,
+        product_price: unitPrice,
         quantity: item.quantity,
         subtotal: itemSubtotal,
       });
