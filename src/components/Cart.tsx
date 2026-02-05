@@ -16,7 +16,9 @@ interface CartProps {
 }
 
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout }: CartProps) {
-  const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const iva = subtotal * 0.19;
+  const total = subtotal + iva;
 
   if (!isOpen) return null;
 
@@ -90,9 +92,20 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
         </div>
 
         {items.length > 0 && (
-          <div className="border-t border-amber-500/20 p-6 bg-slate-900">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-slate-400 text-lg">Total</span>
+          <div className="border-t border-amber-500/20 p-6 bg-slate-900 space-y-4">
+            <div className="space-y-2 pb-4 border-b border-amber-500/20">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Subtotal</span>
+                <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">IVA (19%)</span>
+                <span className="text-white font-semibold">${iva.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-white font-bold text-lg">Total</span>
               <span className="text-amber-400 text-3xl font-bold">${total.toFixed(2)}</span>
             </div>
 

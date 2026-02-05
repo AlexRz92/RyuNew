@@ -3,6 +3,7 @@ import { X, Upload, Loader2, CheckCircle, Truck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CartItem } from './Cart';
 import { states, getCitiesByState } from '../data/venezuelaData';
+import { useNavigate } from 'react-router-dom';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface CheckoutModalProps {
 }
 
 export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = false }: CheckoutModalProps) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -23,6 +25,7 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
     city: '',
     address: '',
   });
+  const [hasPrefilledData, setHasPrefilledData] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,8 +39,9 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
   } | null>(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const iva = subtotal * 0.19;
   const shippingCost = shippingInfo?.isFree ? 0 : shippingInfo?.cost || 0;
-  const total = subtotal + shippingCost;
+  const total = subtotal + iva + shippingCost;
 
   const availableCities = formData.state ? getCitiesByState(formData.state) : [];
 
@@ -59,6 +63,7 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
       setError(null);
       setSuccess(false);
       setTrackingCode('');
+      setHasPrefilledData(false);
       if (isGuest) {
         setFormData({
           first_name: '',
@@ -90,6 +95,7 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
       setError(null);
       setSuccess(false);
       setTrackingCode('');
+      setHasPrefilledData(false);
     }
   }, [isOpen, isGuest]);
 
@@ -125,8 +131,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
             city: profile.city || '',
             address: profile.address_line1 || '',
           });
+          setHasPrefilledData(true);
         } else {
           setFormData(prev => ({ ...prev, customer_email: user.email || '' }));
+          setHasPrefilledData(false);
         }
       }
     } catch (error) {
@@ -412,6 +420,11 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
               </div>
 
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-300">IVA (19%)</span>
+                <span className="text-white font-semibold">${iva.toFixed(2)}</span>
+              </div>
+
               {shippingInfo && (
                 <div className="flex justify-between items-center text-sm">
                   <div className="flex items-center gap-2">
@@ -434,14 +447,35 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
               )}
 
               <div className="flex justify-between items-center pt-2 border-t border-amber-500/20">
-                <span className="text-white font-bold text-lg">Total</span>
+                <span className="text-white font-bold text-lg">Total a Pagar</span>
                 <span className="text-amber-400 font-bold text-2xl">${total.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-white font-semibold">Datos de Facturación y Envío</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-white font-semibold">Datos de Facturación y Envío</h3>
+              {hasPrefilledData && (
+                <p className="text-xs text-slate-400">Los datos están protegidos desde tu perfil</p>
+              )}
+            </div>
+
+            {hasPrefilledData && (
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex justify-between items-center">
+                <p className="text-slate-300 text-sm">Para modificar tus datos, ve a <span className="text-blue-400 font-semibold">Mi Perfil</span></p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate('/perfil');
+                  }}
+                  className="text-blue-400 hover:text-blue-300 text-sm font-semibold underline transition-colors"
+                >
+                  Ir a Mi Perfil
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -449,9 +483,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <input
                   type="text"
                   required
+                  readOnly={hasPrefilledData}
                   value={formData.first_name}
                   onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                   placeholder="Juan"
                 />
               </div>
@@ -461,9 +496,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <input
                   type="text"
                   required
+                  readOnly={hasPrefilledData}
                   value={formData.last_name}
                   onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                   placeholder="Pérez"
                 />
               </div>
@@ -475,9 +511,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <input
                   type="text"
                   required
+                  readOnly={hasPrefilledData}
                   value={formData.cedula}
                   onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                   placeholder="V-12345678"
                 />
               </div>
@@ -487,9 +524,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <input
                   type="tel"
                   required
+                  readOnly={hasPrefilledData}
                   value={formData.customer_phone}
                   onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                   placeholder="0424-1234567"
                 />
               </div>
@@ -500,9 +538,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
               <input
                 type="email"
                 required
+                readOnly={hasPrefilledData}
                 value={formData.customer_email}
                 onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                 placeholder="juan@ejemplo.com"
               />
             </div>
@@ -512,9 +551,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <label className="block text-slate-300 text-sm mb-2">Estado *</label>
                 <select
                   required
+                  disabled={hasPrefilledData}
                   value={formData.state}
                   onChange={(e) => handleStateChange(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Seleccionar estado</option>
                   {states.map((state) => (
@@ -529,10 +569,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
                 <label className="block text-slate-300 text-sm mb-2">Ciudad *</label>
                 <select
                   required
+                  disabled={!formData.state || hasPrefilledData}
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  disabled={!formData.state}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${!formData.state || hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Seleccionar ciudad</option>
                   {availableCities.map((city) => (
@@ -547,9 +587,10 @@ export function CheckoutModal({ isOpen, onClose, items, onSuccess, isGuest = fal
             <div>
               <label className="block text-slate-300 text-sm mb-2">Dirección (opcional)</label>
               <textarea
+                readOnly={hasPrefilledData}
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none resize-none"
+                className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none resize-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
                 rows={3}
                 placeholder="Calle, edificio, piso, apartamento..."
               />

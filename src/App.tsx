@@ -110,6 +110,11 @@ function App() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+
+    const productsListing = document.getElementById('products-listing');
+    if (productsListing) {
+      productsListing.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleCategoryChange = (cat: string | null) => {

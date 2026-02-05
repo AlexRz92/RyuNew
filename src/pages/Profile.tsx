@@ -447,15 +447,24 @@ export function Profile() {
       <Header user={null} />
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
           <h1 className="text-3xl font-bold text-white">Mi Perfil</h1>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Cerrar sesión
-          </button>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              Ir a la tienda
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              Cerrar sesión
+            </button>
+          </div>
         </div>
 
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-6 mb-8">

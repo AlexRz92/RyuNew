@@ -6,6 +6,7 @@ interface OrderTracking {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   created_at: string;
   total_amount: number;
+  shipping_cost?: number;
   items: Array<{
     name: string;
     quantity: number;
@@ -133,24 +134,18 @@ export function TrackOrder() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <p className="text-slate-400 text-sm mb-1">Total</p>
-              <p className="text-amber-400 font-bold text-xl">${result.total_amount.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-slate-400 text-sm mb-1">Fecha de Pedido</p>
-              <p className="text-white">{new Date(result.created_at).toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}</p>
-            </div>
+          <div className="mb-6 pb-6 border-b border-amber-500/20">
+            <p className="text-slate-400 text-sm mb-3">Fecha de Pedido</p>
+            <p className="text-white mb-6">{new Date(result.created_at).toLocaleDateString('es-ES', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}</p>
           </div>
 
-          <div>
+          <div className="mb-6">
             <h4 className="text-white font-semibold mb-3">Productos</h4>
             <div className="space-y-3">
               {result.items.map((item, index) => (
@@ -165,6 +160,39 @@ export function TrackOrder() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-4">
+            <h4 className="text-white font-semibold mb-3">Resumen del Pedido</h4>
+            <div className="space-y-2">
+              {(() => {
+                const subtotal = result.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+                const iva = subtotal * 0.19;
+                const shippingCost = result.shipping_cost || 0;
+                const calculatedTotal = subtotal + iva + shippingCost;
+
+                return (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Subtotal</span>
+                      <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">IVA (19%)</span>
+                      <span className="text-white font-semibold">${iva.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm pb-2 border-b border-amber-500/20">
+                      <span className="text-slate-400">Envío</span>
+                      <span className="text-white font-semibold">${shippingCost.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-white font-bold text-lg">Total a Pagar</span>
+                      <span className="text-amber-400 font-bold text-2xl">${calculatedTotal.toFixed(2)}</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
