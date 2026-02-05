@@ -253,9 +253,10 @@ Deno.serve(async (req: Request) => {
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
-      const supabaseClient = createClient(supabaseUrl, token);
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      userId = user?.id || null;
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (user && !error) {
+        userId = user.id;
+      }
     }
 
     const shippingNotes = `Cédula: ${body.cedula}\nEstado: ${body.state}\nCiudad: ${body.city}${

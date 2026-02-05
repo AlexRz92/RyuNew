@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { LogOut, Copy, Check, Download, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
+import { LoginModal } from '../components/LoginModal';
 
 interface CustomerProfile {
   id: string;
@@ -40,24 +41,38 @@ export function Profile() {
   const [editData, setEditData] = useState<CustomerProfile | null>(null);
   const [copiedTrackingCode, setCopiedTrackingCode] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [isAuthenticatedUser, setIsAuthenticatedUser] = useState<boolean | null>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   useEffect(() => {
-    fetchProfile();
-    fetchOrders();
+    checkAuthentication();
   }, []);
 
-  async function fetchProfile() {
+  async function checkAuthentication() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/');
+        setIsAuthenticatedUser(false);
+        setLoading(false);
         return;
       }
 
+      setIsAuthenticatedUser(true);
+      await fetchProfile(user.id);
+      await fetchOrders(user.id);
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      setIsAuthenticatedUser(false);
+      setLoading(false);
+    }
+  }
+
+  async function fetchProfile(userId: string) {
+    try {
       const { data, error } = await supabase
         .from('customer_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userId)
         .maybeSingle();
 
       if (error) throw error;
@@ -72,15 +87,12 @@ export function Profile() {
     }
   }
 
-  async function fetchOrders() {
+  async function fetchOrders(userId: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -153,6 +165,11 @@ export function Profile() {
     }
   }
 
+  async function handleLoginSuccess() {
+    setIsLoginOpen(false);
+    await checkAuthentication();
+  }
+
   async function toggleOrderDetails(orderId: string) {
     if (expandedOrderId === orderId) {
       setExpandedOrderId(null);
@@ -175,6 +192,30 @@ export function Profile() {
           <p className="text-slate-400">Cargando perfil...</p>
         </div>
       </div>
+    );
+  }
+
+  if (isAuthenticatedUser === false) {
+    return (
+      <>
+        <Header user={null} />
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
+          <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 max-w-md mx-4">
+            <p className="text-slate-400 mb-6">Inicia sesión para ver tu perfil y tus compras</p>
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-lg transition-colors w-full font-semibold"
+            >
+              Iniciar sesión
+            </button>
+          </div>
+        </div>
+        <LoginModal
+          isOpen={isLoginOpen}
+          onClose={() => setIsLoginOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </>
     );
   }
 
