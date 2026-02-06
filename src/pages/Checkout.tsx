@@ -29,8 +29,11 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const [orderId, setOrderId] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofUploaded, setProofUploaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shippingInfo, setShippingInfo] = useState<{
     isFree: boolean;
@@ -186,36 +189,12 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      if (!proofFile) {
-        setError('Debes seleccionar una imagen del comprobante');
-        setLoading(false);
-        return;
-      }
-
-      const fileExt = proofFile.name.split('.').pop();
-      const tempFilePath = `temp/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('transfer-proofs')
-        .upload(tempFilePath, proofFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) {
-        throw new Error('Error al subir el comprobante. Por favor intenta nuevamente.');
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('transfer-proofs')
-        .getPublicUrl(tempFilePath);
-
       const { data: { user } } = await supabase.auth.getUser();
 
       const customerName = `${formData.first_name} ${formData.last_name}`;
@@ -234,7 +213,6 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
           product_id: item.product.id,
           quantity: item.quantity,
         })),
-        payment_proof_url: urlData.publicUrl,
       };
 
       let authHeader = '';
@@ -279,17 +257,81 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       await saveUserProfile();
 
       setError(null);
+      setOrderId(responseData.order_id);
       setTrackingCode(responseData.tracking_code);
-      setSuccess(true);
-      setProofFile(null);
-      setProofPreview(null);
+      setOrderCreated(true);
       onClearCart();
     } catch (err) {
-      console.error('Error in checkout:', err);
+      console.error('Error creating order:', err);
       const errorMessage = err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido. Por favor intenta nuevamente.';
       setError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUploadProof = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setUploadingProof(true);
+
+    try {
+      if (!proofFile) {
+        setError('Debes seleccionar una imagen del comprobante');
+        setUploadingProof(false);
+        return;
+      }
+
+      const fileExt = proofFile.name.split('.').pop();
+      const tempFilePath = `temp/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('transfer-proofs')
+        .upload(tempFilePath, proofFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw new Error('Error al subir el comprobante. Por favor intenta nuevamente.');
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('transfer-proofs')
+        .getPublicUrl(tempFilePath);
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const uploadProofUrl = `${supabaseUrl}/functions/v1/upload-payment-proof`;
+
+      const response = await fetch(uploadProofUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Info': 'supabase-js/2.57.4',
+          'Apikey': anonKey,
+        },
+        body: JSON.stringify({
+          order_id: orderId,
+          payment_proof_url: urlData.publicUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al subir el comprobante');
+      }
+
+      setError(null);
+      setProofFile(null);
+      setProofPreview(null);
+      setProofUploaded(true);
+    } catch (err) {
+      console.error('Error uploading proof:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Hubo un error al subir el comprobante. Por favor intenta nuevamente.';
+      setError(errorMessage);
+    } finally {
+      setUploadingProof(false);
     }
   };
 
@@ -315,7 +357,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     );
   }
 
-  if (success) {
+  if (proofUploaded) {
     return (
       <>
         <Header />
@@ -323,7 +365,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
           <div className="container mx-auto px-4 max-w-2xl">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-amber-500/30 rounded-xl p-8 text-center shadow-2xl">
               <CheckCircle className="w-20 h-20 text-green-400 mx-auto mb-6" />
-              <h2 className="text-3xl font-bold text-white mb-4">¡Pedido Confirmado!</h2>
+              <h2 className="text-3xl font-bold text-white mb-4">¡Comprobante Recibido!</h2>
 
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6">
                 <p className="text-orange-400 font-semibold text-sm mb-2">¡IMPORTANTE!</p>
@@ -363,6 +405,104 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     );
   }
 
+  if (orderCreated) {
+    return (
+      <>
+        <Header onSearch={() => {}} searchQuery="" user={null} />
+        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
+          <div className="container mx-auto px-4 max-w-2xl">
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 shadow-2xl">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2">¡Pedido Creado!</h2>
+                <p className="text-slate-300">Ahora necesitamos que subas el comprobante de transferencia</p>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+                <p className="text-blue-400 font-semibold text-sm mb-2">Próximo paso</p>
+                <p className="text-slate-300 text-sm">
+                  Sube el comprobante de tu transferencia bancaria para completar tu pedido. Una vez lo valides, recibirás tu número de seguimiento.
+                </p>
+              </div>
+
+              <form onSubmit={handleUploadProof} className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-white font-semibold text-lg">Comprobante de Transferencia</h3>
+
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                    <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
+                    <p className="text-slate-300 text-sm">
+                      Debes subir una captura del comprobante de transferencia
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 text-sm mb-2 font-semibold">
+                      Captura de Pantalla del Comprobante *
+                    </label>
+                    <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        id="proof-upload-step2"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="proof-upload-step2" className="cursor-pointer block">
+                        {proofPreview ? (
+                          <img
+                            src={proofPreview}
+                            alt="Comprobante"
+                            className="max-h-48 mx-auto rounded-lg mb-3"
+                          />
+                        ) : (
+                          <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                        )}
+                        <p className="text-slate-400 text-sm">
+                          {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen (JPG, PNG o WEBP)'}
+                        </p>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                    <p className="text-red-400 text-sm">{error}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 flex-col sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/')}
+                    className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all flex-1"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                    Volver a la tienda
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploadingProof || !proofFile}
+                    className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                  >
+                    {uploadingProof ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Subiendo...
+                      </>
+                    ) : (
+                      'Confirmar Comprobante'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       <Header onSearch={() => {}} searchQuery="" user={null} />
@@ -379,7 +519,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
           </div>
 
           <div className="grid lg:grid-cols-[1fr_400px] gap-8">
-            <form onSubmit={handleSubmit} className="space-y-6 order-2 lg:order-1">
+            <form onSubmit={handleSubmitOrder} className="space-y-6 order-2 lg:order-1">
 
               <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
@@ -524,44 +664,11 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
               <BankAccountsCarousel />
 
-              <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
-                <h3 className="text-white font-semibold text-lg mb-4">Comprobante de Transferencia</h3>
-
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-4">
-                  <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
-                  <p className="text-slate-300 text-sm">
-                    Debes subir una captura del comprobante de transferencia
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2 font-semibold">
-                    Captura de Pantalla del Comprobante *
-                  </label>
-                  <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
-                    <input
-                      type="file"
-                      id="proof-upload-checkout"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <label htmlFor="proof-upload-checkout" className="cursor-pointer block">
-                      {proofPreview ? (
-                        <img
-                          src={proofPreview}
-                          alt="Comprobante"
-                          className="max-h-48 mx-auto rounded-lg mb-3"
-                        />
-                      ) : (
-                        <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                      )}
-                      <p className="text-slate-400 text-sm">
-                        {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen (JPG, PNG o WEBP)'}
-                      </p>
-                    </label>
-                  </div>
-                </div>
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-400 font-semibold text-sm mb-2">Próximo paso</p>
+                <p className="text-slate-300 text-sm">
+                  Después de confirmar tu pedido, podrás subir el comprobante de tu transferencia bancaria.
+                </p>
               </div>
 
               {error && (
@@ -581,13 +688,13 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !proofFile}
+                  disabled={loading}
                   className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Procesando...
+                      Creando Pedido...
                     </>
                   ) : (
                     'Confirmar Pedido'

@@ -21,7 +21,7 @@ interface CheckoutRequest {
   address?: string;
   cedula: string;
   items: CartItem[];
-  payment_proof_url: string;
+  payment_proof_url?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -70,18 +70,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!body.payment_proof_url) {
-      return new Response(
-        JSON.stringify({ error: "Debes subir el comprobante antes de confirmar" }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
 
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
       return new Response(
@@ -273,7 +261,7 @@ Deno.serve(async (req: Request) => {
         customer_email: body.customer_email,
         customer_phone: body.customer_phone || null,
         payment_method: "transfer",
-        payment_proof_url: body.payment_proof_url,
+        payment_proof_url: body.payment_proof_url || null,
         total_amount: totalAmount,
         status: "pending",
         notes: shippingNotes,
