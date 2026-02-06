@@ -266,7 +266,7 @@ Deno.serve(async (req: Request) => {
         status: "pending",
         notes: shippingNotes,
       })
-      .select()
+      .select("*, order_token")
       .single();
 
     if (orderError) {
@@ -314,6 +314,7 @@ Deno.serve(async (req: Request) => {
         success: true,
         tracking_code: order.tracking_code,
         order_id: order.id,
+        order_token: order.order_token,
         subtotal: subtotal,
         iva: iva,
         shipping_cost: shippingCost,

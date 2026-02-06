@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface UploadProofRequest {
   order_id: string;
+  order_token: string;
   file_name: string;
   file_data: string;
 }
@@ -47,19 +48,21 @@ Deno.serve(async (req: Request) => {
 
     console.log("[upload-payment-proof] Request recibido:", {
       order_id: body.order_id ? "presente" : "FALTA",
+      order_token: body.order_token ? "presente" : "FALTA",
       file_name: body.file_name,
       file_data_length: body.file_data?.length || 0,
     });
 
-    if (!body.order_id || !body.file_data || !body.file_name) {
+    if (!body.order_id || !body.order_token || !body.file_data || !body.file_name) {
       console.error("[upload-payment-proof] Validación fallida:", {
         order_id: !body.order_id ? "FALTA" : "ok",
+        order_token: !body.order_token ? "FALTA" : "ok",
         file_data: !body.file_data ? "FALTA" : "ok",
         file_name: !body.file_name ? "FALTA" : "ok",
       });
       return new Response(
         JSON.stringify({
-          error: "Missing order_id, file_data, or file_name",
+          error: "Missing order_id, order_token, file_data, or file_name",
         }),
         {
           status: 400,
@@ -73,7 +76,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, tracking_code")
+      .select("id, tracking_code, order_token, status")
       .eq("id", body.order_id)
       .maybeSingle();
 
@@ -97,6 +100,34 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: "Order not found" }),
         {
           status: 404,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (order.order_token !== body.order_token) {
+      console.error("[upload-payment-proof] Invalid order token");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Invalid order token" }),
+        {
+          status: 401,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (order.status !== "pending") {
+      console.error("[upload-payment-proof] Order status is not pending:", order.status);
+      return new Response(
+        JSON.stringify({ error: "Order is not in pending status" }),
+        {
+          status: 400,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",

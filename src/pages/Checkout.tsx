@@ -31,6 +31,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   const [loading, setLoading] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [orderToken, setOrderToken] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofUploaded, setProofUploaded] = useState(false);
@@ -53,19 +54,22 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
   useEffect(() => {
     const savedOrderId = sessionStorage.getItem('checkout_order_id');
+    const savedOrderToken = sessionStorage.getItem('checkout_order_token');
     const savedTrackingCode = sessionStorage.getItem('checkout_tracking_code');
     const savedOrderCreated = sessionStorage.getItem('checkout_order_created');
     const savedProofUploaded = sessionStorage.getItem('checkout_proof_uploaded');
 
     console.log('[useEffect] Recuperando datos de sessionStorage:', {
       savedOrderId: savedOrderId ? 'presente' : 'ausente',
+      savedOrderToken: savedOrderToken ? 'presente' : 'ausente',
       savedTrackingCode: savedTrackingCode ? 'presente' : 'ausente',
       savedOrderCreated,
       savedProofUploaded
     });
 
-    if (savedOrderId && savedTrackingCode) {
+    if (savedOrderId && savedOrderToken && savedTrackingCode) {
       setOrderId(savedOrderId);
+      setOrderToken(savedOrderToken);
       setTrackingCode(savedTrackingCode);
       if (savedOrderCreated === 'true') {
         setOrderCreated(true);
@@ -289,15 +293,18 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
       setError(null);
       setOrderId(responseData.order_id);
+      setOrderToken(responseData.order_token);
       setTrackingCode(responseData.tracking_code);
       setOrderCreated(true);
 
       sessionStorage.setItem('checkout_order_id', responseData.order_id);
+      sessionStorage.setItem('checkout_order_token', responseData.order_token);
       sessionStorage.setItem('checkout_tracking_code', responseData.tracking_code);
       sessionStorage.setItem('checkout_order_created', 'true');
 
       console.log('[handleSubmitOrder] Pedido creado exitosamente:', {
         orderId: responseData.order_id,
+        orderToken: responseData.order_token ? 'presente' : 'ausente',
         trackingCode: responseData.tracking_code,
         guardadoEnSessionStorage: true
       });
@@ -320,6 +327,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     try {
       console.log('[handleUploadProof] Validando datos:', {
         orderId: orderId ? 'presente' : 'FALTA',
+        orderToken: orderToken ? 'presente' : 'FALTA',
         trackingCode: trackingCode ? 'presente' : 'FALTA',
         proofFile: proofFile ? 'presente' : 'FALTA',
         proofFileName: proofFile?.name
@@ -328,6 +336,13 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       if (!orderId) {
         console.error('[handleUploadProof] Error: orderId no está disponible');
         setError('Error: No se encontró el ID del pedido. Por favor, intenta crear el pedido nuevamente.');
+        setUploadingProof(false);
+        return;
+      }
+
+      if (!orderToken) {
+        console.error('[handleUploadProof] Error: orderToken no está disponible');
+        setError('Error: No se encontró el token de la orden. Por favor, intenta crear el pedido nuevamente.');
         setUploadingProof(false);
         return;
       }
@@ -365,12 +380,14 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
       const payload = {
         order_id: orderId,
+        order_token: orderToken,
         file_name: proofFile.name,
         file_data: fileData,
       };
 
       console.log('[handleUploadProof] Payload a enviar:', {
         order_id: payload.order_id ? 'presente' : 'FALTA',
+        order_token: payload.order_token ? 'presente' : 'FALTA',
         file_name: payload.file_name,
         file_data_length: payload.file_data.length,
         file_data_preview: payload.file_data.substring(0, 50) + '...'
@@ -426,6 +443,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
       setTimeout(() => {
         sessionStorage.removeItem('checkout_order_id');
+        sessionStorage.removeItem('checkout_order_token');
         sessionStorage.removeItem('checkout_tracking_code');
         sessionStorage.removeItem('checkout_order_created');
         sessionStorage.removeItem('checkout_proof_uploaded');
@@ -440,6 +458,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
   const cleanupCheckout = () => {
     sessionStorage.removeItem('checkout_order_id');
+    sessionStorage.removeItem('checkout_order_token');
     sessionStorage.removeItem('checkout_tracking_code');
     sessionStorage.removeItem('checkout_order_created');
     sessionStorage.removeItem('checkout_proof_uploaded');
