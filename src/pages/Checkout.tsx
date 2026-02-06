@@ -57,6 +57,13 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     const savedOrderCreated = sessionStorage.getItem('checkout_order_created');
     const savedProofUploaded = sessionStorage.getItem('checkout_proof_uploaded');
 
+    console.log('[useEffect] Recuperando datos de sessionStorage:', {
+      savedOrderId: savedOrderId ? 'presente' : 'ausente',
+      savedTrackingCode: savedTrackingCode ? 'presente' : 'ausente',
+      savedOrderCreated,
+      savedProofUploaded
+    });
+
     if (savedOrderId && savedTrackingCode) {
       setOrderId(savedOrderId);
       setTrackingCode(savedTrackingCode);
@@ -66,6 +73,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       if (savedProofUploaded === 'true') {
         setProofUploaded(true);
       }
+      console.log('[useEffect] Estado actualizado con datos guardados');
+    } else {
+      console.log('[useEffect] No se encontraron datos guardados en sessionStorage');
     }
   }, []);
 
@@ -286,6 +296,12 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       sessionStorage.setItem('checkout_tracking_code', responseData.tracking_code);
       sessionStorage.setItem('checkout_order_created', 'true');
 
+      console.log('[handleSubmitOrder] Pedido creado exitosamente:', {
+        orderId: responseData.order_id,
+        trackingCode: responseData.tracking_code,
+        guardadoEnSessionStorage: true
+      });
+
       onClearCart();
     } catch (err) {
       console.error('Error creating order:', err);
@@ -302,50 +318,68 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     setUploadingProof(true);
 
     try {
+      console.log('[handleUploadProof] Validando datos:', {
+        orderId: orderId ? 'presente' : 'FALTA',
+        trackingCode: trackingCode ? 'presente' : 'FALTA',
+        proofFile: proofFile ? 'presente' : 'FALTA',
+        proofFileName: proofFile?.name
+      });
+
+      if (!orderId) {
+        console.error('[handleUploadProof] Error: orderId no está disponible');
+        setError('Error: No se encontró el ID del pedido. Por favor, intenta crear el pedido nuevamente.');
+        setUploadingProof(false);
+        return;
+      }
+
+      if (!trackingCode) {
+        console.error('[handleUploadProof] Error: trackingCode no está disponible');
+        setError('Error: No se encontró el código de seguimiento. Por favor, intenta crear el pedido nuevamente.');
+        setUploadingProof(false);
+        return;
+      }
+
       if (!proofFile) {
+        console.error('[handleUploadProof] Error: proofFile no está seleccionado');
         setError('Debes seleccionar una imagen del comprobante');
         setUploadingProof(false);
         return;
       }
 
-      const fileExt = proofFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-      let finalFileName = `transferencias/${trackingCode}.${fileExt}`;
-      let attemptNumber = 2;
+      console.log('[handleUploadProof] Leyendo archivo para convertir a base64...');
 
-      const { data: existingFiles } = await supabase.storage
-        .from('transfer-proofs')
-        .list('transferencias', {
-          search: trackingCode
-        });
-
-      if (existingFiles && existingFiles.length > 0) {
-        const baseFileName = `${trackingCode}.${fileExt}`;
-        if (existingFiles.some(f => f.name === baseFileName)) {
-          while (existingFiles.some(f => f.name === `${trackingCode}-${attemptNumber}.${fileExt}`)) {
-            attemptNumber++;
-          }
-          finalFileName = `transferencias/${trackingCode}-${attemptNumber}.${fileExt}`;
-        }
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('transfer-proofs')
-        .upload(finalFileName, proofFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        throw new Error('Error al subir el comprobante. Por favor intenta nuevamente.');
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('transfer-proofs')
-        .getPublicUrl(finalFileName);
+      const fileData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = () => reject(new Error('Error al leer el archivo'));
+        reader.readAsDataURL(proofFile);
+      });
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const uploadProofUrl = `${supabaseUrl}/functions/v1/upload-payment-proof`;
+
+      const payload = {
+        order_id: orderId,
+        file_name: proofFile.name,
+        file_data: fileData,
+      };
+
+      console.log('[handleUploadProof] Payload a enviar:', {
+        order_id: payload.order_id ? 'presente' : 'FALTA',
+        file_name: payload.file_name,
+        file_data_length: payload.file_data.length,
+        file_data_preview: payload.file_data.substring(0, 50) + '...'
+      });
+
+      console.log('[handleUploadProof] Enviando request al edge function:', {
+        url: uploadProofUrl,
+        payload_keys: Object.keys(payload)
+      });
 
       const response = await fetch(uploadProofUrl, {
         method: 'POST',
@@ -354,16 +388,21 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
           'X-Client-Info': 'supabase-js/2.57.4',
           'Apikey': anonKey,
         },
-        body: JSON.stringify({
-          order_id: orderId,
-          payment_proof_url: urlData.publicUrl,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[handleUploadProof] Error del servidor:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
         throw new Error(errorData.error || 'Error al subir el comprobante');
       }
+
+      const responseData = await response.json();
+      console.log('[handleUploadProof] Comprobante subido exitosamente:', responseData);
 
       setError(null);
       setProofFile(null);
@@ -607,6 +646,15 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 <div className="space-y-4">
                   <h3 className="text-white font-semibold text-lg">Comprobante de Transferencia</h3>
 
+                  {(!orderId || !trackingCode) && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                      <p className="text-red-400 font-semibold mb-1">Error de pedido</p>
+                      <p className="text-slate-300 text-sm">
+                        No se encontró la información del pedido. Por favor, vuelve a la tienda e intenta nuevamente.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
                     <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
                     <p className="text-slate-300 text-sm">
@@ -671,7 +719,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                   </button>
                   <button
                     type="submit"
-                    disabled={uploadingProof || !proofFile || cancellingOrder}
+                    disabled={uploadingProof || !proofFile || !orderId || !trackingCode || cancellingOrder}
                     className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                   >
                     {uploadingProof ? (

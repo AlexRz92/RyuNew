@@ -8,7 +8,8 @@ const corsHeaders = {
 
 interface UploadProofRequest {
   order_id: string;
-  payment_proof_url: string;
+  file_name: string;
+  file_data: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -44,9 +45,22 @@ Deno.serve(async (req: Request) => {
 
     const body: UploadProofRequest = await req.json();
 
-    if (!body.order_id || !body.payment_proof_url) {
+    console.log("[upload-payment-proof] Request recibido:", {
+      order_id: body.order_id ? "presente" : "FALTA",
+      file_name: body.file_name,
+      file_data_length: body.file_data?.length || 0,
+    });
+
+    if (!body.order_id || !body.file_data || !body.file_name) {
+      console.error("[upload-payment-proof] Validación fallida:", {
+        order_id: !body.order_id ? "FALTA" : "ok",
+        file_data: !body.file_data ? "FALTA" : "ok",
+        file_name: !body.file_name ? "FALTA" : "ok",
+      });
       return new Response(
-        JSON.stringify({ error: "Missing order_id or payment_proof_url" }),
+        JSON.stringify({
+          error: "Missing order_id, file_data, or file_name",
+        }),
         {
           status: 400,
           headers: {
@@ -59,7 +73,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id")
+      .select("id, tracking_code")
       .eq("id", body.order_id)
       .maybeSingle();
 
@@ -78,6 +92,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!order) {
+      console.error("[upload-payment-proof] Order not found:", body.order_id);
       return new Response(
         JSON.stringify({ error: "Order not found" }),
         {
@@ -90,9 +105,54 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const fileExt = body.file_name.split(".").pop()?.toLowerCase() || "jpg";
+    const fileName = `transferencias/${order.tracking_code}.${fileExt}`;
+
+    console.log("[upload-payment-proof] Subiendo archivo a Storage:", {
+      fileName,
+      fileSize: body.file_data.length,
+    });
+
+    const binaryData = Uint8Array.from(atob(body.file_data), (c) =>
+      c.charCodeAt(0)
+    );
+
+    const { error: uploadError } = await supabase.storage
+      .from("transfer-proofs")
+      .upload(fileName, binaryData, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: `image/${fileExt}`,
+      });
+
+    if (uploadError) {
+      console.error("Error uploading file to storage:", uploadError);
+      return new Response(
+        JSON.stringify({ error: "Error uploading file" }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("transfer-proofs")
+      .getPublicUrl(fileName);
+
+    const paymentProofUrl = urlData.publicUrl;
+
+    console.log("[upload-payment-proof] Archivo subido, actualizando orden:", {
+      orderId: body.order_id,
+      proofUrl: paymentProofUrl,
+    });
+
     const { error: updateError } = await supabase
       .from("orders")
-      .update({ payment_proof_url: body.payment_proof_url })
+      .update({ payment_proof_url: paymentProofUrl })
       .eq("id", body.order_id);
 
     if (updateError) {
@@ -109,10 +169,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("[upload-payment-proof] Comprobante actualizado exitosamente");
+
     return new Response(
       JSON.stringify({
         success: true,
         message: "Comprobante de pago actualizado exitosamente",
+        payment_proof_url: paymentProofUrl,
       }),
       {
         status: 200,
