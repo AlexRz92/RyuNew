@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, Loader2, CheckCircle, Truck, ArrowLeft, Home } from 'lucide-react';
+import { Upload, Loader2, CheckCircle, Truck, ArrowLeft, Home, Copy, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CartItem } from '../components/Cart';
 import { states, getCitiesByState } from '../data/venezuelaData';
@@ -34,6 +34,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   const [trackingCode, setTrackingCode] = useState('');
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofUploaded, setProofUploaded] = useState(false);
+  const [copiedTracking, setCopiedTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shippingInfo, setShippingInfo] = useState<{
     isFree: boolean;
@@ -282,14 +283,31 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
         return;
       }
 
-      const fileExt = proofFile.name.split('.').pop();
-      const tempFilePath = `temp/${Date.now()}.${fileExt}`;
+      const fileExt = proofFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      let finalFileName = `transferencias/${trackingCode}.${fileExt}`;
+      let attemptNumber = 2;
+
+      const { data: existingFiles } = await supabase.storage
+        .from('transfer-proofs')
+        .list('transferencias', {
+          search: trackingCode
+        });
+
+      if (existingFiles && existingFiles.length > 0) {
+        const baseFileName = `${trackingCode}.${fileExt}`;
+        if (existingFiles.some(f => f.name === baseFileName)) {
+          while (existingFiles.some(f => f.name === `${trackingCode}-${attemptNumber}.${fileExt}`)) {
+            attemptNumber++;
+          }
+          finalFileName = `transferencias/${trackingCode}-${attemptNumber}.${fileExt}`;
+        }
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('transfer-proofs')
-        .upload(tempFilePath, proofFile, {
+        .upload(finalFileName, proofFile, {
           cacheControl: '3600',
-          upsert: true
+          upsert: false
         });
 
       if (uploadError) {
@@ -298,7 +316,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
       const { data: urlData } = supabase.storage
         .from('transfer-proofs')
-        .getPublicUrl(tempFilePath);
+        .getPublicUrl(finalFileName);
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -335,7 +353,17 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     }
   };
 
-  if (items.length === 0 && !success) {
+  const handleCopyTracking = async () => {
+    try {
+      await navigator.clipboard.writeText(trackingCode);
+      setCopiedTracking(true);
+      setTimeout(() => setCopiedTracking(false), 2000);
+    } catch (error) {
+      console.error('Error copying tracking code:', error);
+    }
+  };
+
+  if (items.length === 0 && !orderCreated && !proofUploaded) {
     return (
       <>
         <Header />
@@ -375,9 +403,26 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
               </div>
 
               <p className="text-slate-300 mb-3 font-semibold">Tu código de seguimiento:</p>
-              <div className="bg-slate-900 border-2 border-amber-500/40 rounded-lg p-5 mb-6">
+              <div className="bg-slate-900 border-2 border-amber-500/40 rounded-lg p-5 mb-4">
                 <p className="text-amber-400 text-3xl font-bold tracking-wider">{trackingCode}</p>
               </div>
+
+              <button
+                onClick={handleCopyTracking}
+                className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-colors w-full mb-6"
+              >
+                {copiedTracking ? (
+                  <>
+                    <Check className="w-5 h-5" />
+                    Código copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5" />
+                    Copiar código de seguimiento
+                  </>
+                )}
+              </button>
 
               <p className="text-slate-400 text-sm mb-6">
                 Necesitarás este código para consultar el estado de tu pedido en cualquier momento.
