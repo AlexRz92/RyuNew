@@ -35,6 +35,8 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofUploaded, setProofUploaded] = useState(false);
   const [copiedTracking, setCopiedTracking] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shippingInfo, setShippingInfo] = useState<{
     isFree: boolean;
@@ -48,6 +50,24 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   const total = subtotal + iva + shippingCost;
 
   const availableCities = formData.state ? getCitiesByState(formData.state) : [];
+
+  useEffect(() => {
+    const savedOrderId = sessionStorage.getItem('checkout_order_id');
+    const savedTrackingCode = sessionStorage.getItem('checkout_tracking_code');
+    const savedOrderCreated = sessionStorage.getItem('checkout_order_created');
+    const savedProofUploaded = sessionStorage.getItem('checkout_proof_uploaded');
+
+    if (savedOrderId && savedTrackingCode) {
+      setOrderId(savedOrderId);
+      setTrackingCode(savedTrackingCode);
+      if (savedOrderCreated === 'true') {
+        setOrderCreated(true);
+      }
+      if (savedProofUploaded === 'true') {
+        setProofUploaded(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!isGuest) {
@@ -261,6 +281,11 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       setOrderId(responseData.order_id);
       setTrackingCode(responseData.tracking_code);
       setOrderCreated(true);
+
+      sessionStorage.setItem('checkout_order_id', responseData.order_id);
+      sessionStorage.setItem('checkout_tracking_code', responseData.tracking_code);
+      sessionStorage.setItem('checkout_order_created', 'true');
+
       onClearCart();
     } catch (err) {
       console.error('Error creating order:', err);
@@ -344,6 +369,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       setProofFile(null);
       setProofPreview(null);
       setProofUploaded(true);
+      sessionStorage.setItem('checkout_proof_uploaded', 'true');
     } catch (err) {
       console.error('Error uploading proof:', err);
       const errorMessage = err instanceof Error ? err.message : 'Hubo un error al subir el comprobante. Por favor intenta nuevamente.';
@@ -357,10 +383,81 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     try {
       await navigator.clipboard.writeText(trackingCode);
       setCopiedTracking(true);
-      setTimeout(() => setCopiedTracking(false), 2000);
+      setRedirecting(true);
+
+      setTimeout(() => {
+        sessionStorage.removeItem('checkout_order_id');
+        sessionStorage.removeItem('checkout_tracking_code');
+        sessionStorage.removeItem('checkout_order_created');
+        sessionStorage.removeItem('checkout_proof_uploaded');
+        navigate('/');
+      }, 1800);
     } catch (error) {
       console.error('Error copying tracking code:', error);
+      setCopiedTracking(false);
+      setRedirecting(false);
     }
+  };
+
+  const cleanupCheckout = () => {
+    sessionStorage.removeItem('checkout_order_id');
+    sessionStorage.removeItem('checkout_tracking_code');
+    sessionStorage.removeItem('checkout_order_created');
+    sessionStorage.removeItem('checkout_proof_uploaded');
+  };
+
+  const handleCancelOrderAndBack = async () => {
+    setCancellingOrder(true);
+    setError(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const cancelOrderUrl = `${supabaseUrl}/functions/v1/cancel-order`;
+
+      let authHeader = '';
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        authHeader = `Bearer ${session.access_token}`;
+      }
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'X-Client-Info': 'supabase-js/2.57.4',
+        'Apikey': anonKey,
+      };
+
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      }
+
+      const response = await fetch(cancelOrderUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          order_id: orderId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cancelar la orden');
+      }
+
+      cleanupCheckout();
+      navigate('/');
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Hubo un error al cancelar la orden. Por favor intenta nuevamente.';
+      setError(errorMessage);
+    } finally {
+      setCancellingOrder(false);
+    }
+  };
+
+  const handleBackToStore = () => {
+    cleanupCheckout();
+    navigate('/');
   };
 
   if (items.length === 0 && !orderCreated && !proofUploaded) {
@@ -386,6 +483,34 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   }
 
   if (proofUploaded) {
+    if (!trackingCode) {
+      return (
+        <>
+          <Header />
+          <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
+            <div className="container mx-auto px-4 max-w-2xl">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-red-500/30 rounded-xl p-8 text-center shadow-2xl">
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 mb-6">
+                  <p className="text-red-400 font-semibold mb-2">Error al obtener el código de seguimiento</p>
+                  <p className="text-slate-300 text-sm">
+                    Hubo un problema al recuperar tu código de seguimiento. Por favor, contacta con soporte.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleBackToStore}
+                  className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all w-full"
+                >
+                  <Home className="w-5 h-5" />
+                  Volver a la tienda
+                </button>
+              </div>
+            </div>
+          </main>
+        </>
+      );
+    }
+
     return (
       <>
         <Header />
@@ -407,42 +532,51 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 <p className="text-amber-400 text-3xl font-bold tracking-wider">{trackingCode}</p>
               </div>
 
-              <button
-                onClick={handleCopyTracking}
-                className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-colors w-full mb-6"
-              >
-                {copiedTracking ? (
-                  <>
-                    <Check className="w-5 h-5" />
-                    Código copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-5 h-5" />
-                    Copiar código de seguimiento
-                  </>
-                )}
-              </button>
+              {redirecting ? (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5 text-green-400" />
+                    <p className="text-green-400 font-semibold">Código copiado</p>
+                  </div>
+                  <p className="text-slate-300 text-sm mt-2">
+                    Redirigiendo a la tienda...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={handleCopyTracking}
+                    disabled={copiedTracking}
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg transition-colors w-full mb-4 disabled:opacity-70"
+                  >
+                    {copiedTracking ? (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Copiando...
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-5 h-5" />
+                        Copiar código de seguimiento
+                      </>
+                    )}
+                  </button>
 
-              <p className="text-slate-400 text-sm mb-6">
-                Necesitarás este código para consultar el estado de tu pedido en cualquier momento.
-              </p>
+                  <p className="text-slate-400 text-sm mb-6">
+                    Copia el código y serás redirigido automáticamente a la tienda
+                  </p>
+                </>
+              )}
 
-              <div className="flex gap-3 flex-col sm:flex-row">
+              {!redirecting && (
                 <button
-                  onClick={() => navigate('/')}
-                  className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all flex-1"
+                  onClick={handleBackToStore}
+                  className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all w-full"
                 >
                   <Home className="w-5 h-5" />
-                  Volver a la tienda
+                  Volver a la tienda sin copiar
                 </button>
-                <button
-                  onClick={() => navigate('/perfil')}
-                  className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 flex-1"
-                >
-                  Ver mis compras
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </main>
@@ -519,15 +653,25 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 <div className="flex gap-3 flex-col sm:flex-row">
                   <button
                     type="button"
-                    onClick={() => navigate('/')}
-                    className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all flex-1"
+                    onClick={handleCancelOrderAndBack}
+                    disabled={uploadingProof || cancellingOrder}
+                    className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <ArrowLeft className="w-5 h-5" />
-                    Volver a la tienda
+                    {cancellingOrder ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Cancelando...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowLeft className="w-5 h-5" />
+                        Volver a la tienda
+                      </>
+                    )}
                   </button>
                   <button
                     type="submit"
-                    disabled={uploadingProof || !proofFile}
+                    disabled={uploadingProof || !proofFile || cancellingOrder}
                     className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                   >
                     {uploadingProof ? (
