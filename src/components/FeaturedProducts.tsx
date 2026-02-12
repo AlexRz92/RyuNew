@@ -35,7 +35,7 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
     <div className="mb-12">
       <div className="flex items-center justify-center mb-6">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-        <h2 className="text-2xl font-bold text-white px-6">Productos más vendidos</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white px-4 sm:px-6">Productos más vendidos</h2>
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
       </div>
 
@@ -43,7 +43,7 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-900/90 hover:bg-slate-800 text-white p-3 rounded-full shadow-xl border border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
+            className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-900/90 hover:bg-slate-800 text-white p-3 rounded-full shadow-xl border border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -52,7 +52,7 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-900/90 hover:bg-slate-800 text-white p-3 rounded-full shadow-xl border border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
+            className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-900/90 hover:bg-slate-800 text-white p-3 rounded-full shadow-xl border border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -60,7 +60,7 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
 
         <div
           id="featured-scroll"
-          className="flex gap-6 overflow-x-hidden scroll-smooth pb-4"
+          className="flex gap-3 sm:gap-6 overflow-x-auto scroll-smooth pb-4"
         >
           {products.map((product) => {
             const productInventory = inventory.find((inv) => inv.product_id === product.id);
@@ -71,9 +71,9 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
               <div
                 key={product.id}
                 onClick={() => onProductClick(product)}
-                className="flex-shrink-0 w-[280px] bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 cursor-pointer group/card"
+                className="flex-shrink-0 w-[160px] sm:w-[240px] lg:w-[280px] bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-lg sm:rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 cursor-pointer group/card"
               >
-                <div className="h-[280px] bg-slate-900/50 flex items-center justify-center overflow-hidden relative">
+                <div className="h-40 sm:h-56 lg:h-[280px] bg-slate-900/50 flex items-center justify-center overflow-hidden relative">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
@@ -81,33 +81,33 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
                       className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <Package className="w-20 h-20 text-slate-700" />
+                    <Package className="w-12 h-12 sm:w-20 sm:h-20 text-slate-700" />
                   )}
-                  <div className="absolute top-2 right-2 bg-slate-900/90 backdrop-blur-sm px-2 py-1 rounded-lg">
+                  <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
                     {inStock ? (
-                      <span className="text-xs text-emerald-400 font-medium">{stockCount} disponibles</span>
+                      <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">{stockCount} disponibles</span>
                     ) : (
-                      <span className="text-xs text-red-400 font-medium">Sin stock</span>
+                      <span className="text-[10px] sm:text-xs text-red-400 font-medium">Sin stock</span>
                     )}
                   </div>
                 </div>
 
-                <div className="p-4 flex flex-col h-[180px]">
-                  <h3 className="text-white font-semibold text-base mb-2 line-clamp-2 flex-shrink-0">
+                <div className="p-3 sm:p-4 flex flex-col">
+                  <h3 className="text-white font-semibold text-sm sm:text-base mb-1 sm:mb-2 line-clamp-2 flex-shrink-0">
                     {product.name}
                   </h3>
-                  <p className="text-slate-400 text-sm mb-3 line-clamp-2 flex-1">
+                  <p className="text-slate-400 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 flex-1">
                     {product.description}
                   </p>
 
-                  <div className="flex items-center justify-between mt-auto">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto gap-2">
                     <div>
-                      <p className="text-amber-400 text-2xl font-bold">
+                      <p className="text-amber-400 text-lg sm:text-xl lg:text-2xl font-bold">
                         ${product.price.toFixed(2)}
                       </p>
                     </div>
                     <button
-                      className="bg-orange-600 hover:bg-orange-500 text-white font-semibold px-4 py-2 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 text-sm"
+                      className="bg-orange-600 hover:bg-orange-500 text-white font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Ver detalles
                     </button>
