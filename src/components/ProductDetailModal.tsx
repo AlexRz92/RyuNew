@@ -1,6 +1,7 @@
 import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { Product, Inventory } from '../lib/supabase';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -44,10 +45,11 @@ export function ProductDetailModal({ product, inventory, onClose, onAddToCart }:
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-slate-900/50 rounded-xl overflow-hidden aspect-square flex items-center justify-center">
               {product.image_url ? (
-                <img
+                <ImageWithSkeleton
                   src={product.image_url}
                   alt={product.name}
                   className="w-full h-full object-cover"
+                  priority={true}
                 />
               ) : (
                 <div className="w-32 h-32 bg-slate-700 rounded" />

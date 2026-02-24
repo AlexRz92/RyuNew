@@ -1,14 +1,16 @@
 import { Plus, Package } from 'lucide-react';
 import { Product, Inventory } from '../lib/supabase';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductCardProps {
   product: Product;
   inventory: Inventory | undefined;
   onAddToCart: (product: Product) => void;
   onProductClick?: (product: Product) => void;
+  priority?: boolean;
 }
 
-export function ProductCard({ product, inventory, onAddToCart, onProductClick }: ProductCardProps) {
+export function ProductCard({ product, inventory, onAddToCart, onProductClick, priority = false }: ProductCardProps) {
   const inStock = inventory && inventory.quantity > 0;
   const stockCount = inventory?.quantity || 0;
 
@@ -19,15 +21,16 @@ export function ProductCard({ product, inventory, onAddToCart, onProductClick }:
         onClick={() => onProductClick?.(product)}
       >
         {product.image_url ? (
-          <img
+          <ImageWithSkeleton
             src={product.image_url}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            priority={priority}
           />
         ) : (
           <Package className="w-12 h-12 sm:w-20 sm:h-20 text-slate-700" />
         )}
-        <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+        <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded z-10">
           {inStock ? (
             <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">{stockCount} disponibles</span>
           ) : (

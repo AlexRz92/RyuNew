@@ -204,7 +204,7 @@ function App() {
     : 'Todos los productos';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 overflow-x-hidden">
       <Routes>
         <Route path="/perfil" element={<Profile cartItemsCount={totalCartItems} onReplaceCart={replaceCart} />} />
         <Route path="/checkout" element={<Checkout items={cartItems} onClearCart={handleClearCart} />} />
@@ -212,7 +212,7 @@ function App() {
           <>
       <Header onSearch={handleSearchChange} searchQuery={searchQuery} onLoginClick={handleHeaderLogin} />
 
-      <main className="container mx-auto px-4 py-8 pb-32 max-w-[1800px]">
+      <main className="container mx-auto px-4 py-8 pb-32 max-w-[1800px] overflow-x-hidden">
         {categories.length > 0 && (
           <CategoryFilter
             categories={categories}
@@ -243,13 +243,14 @@ function App() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-6 mb-8">
-                {currentProducts.map((product) => (
+                {currentProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={product}
                     inventory={inventory.find((inv) => inv.product_id === product.id)}
                     onAddToCart={addToCart}
                     onProductClick={setSelectedProduct}
+                    priority={index < 5}
                   />
                 ))}
               </div>

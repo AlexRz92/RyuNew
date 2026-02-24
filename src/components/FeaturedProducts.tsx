@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { Product, Inventory } from '../lib/supabase';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -32,10 +33,10 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
   const canScrollRight = scrollPosition < (products.length * (cardWidth + gap) - 1000);
 
   return (
-    <div className="mb-12">
+    <div className="mb-12 overflow-hidden">
       <div className="flex items-center justify-center mb-6">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-        <h2 className="text-xl sm:text-2xl font-bold text-white px-4 sm:px-6">Productos más vendidos</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white px-4 sm:px-6 whitespace-nowrap">Productos más vendidos</h2>
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
       </div>
 
@@ -60,9 +61,9 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
 
         <div
           id="featured-scroll"
-          className="flex gap-3 sm:gap-6 overflow-x-auto scroll-smooth pb-4"
+          className="flex gap-3 sm:gap-6 overflow-x-auto scroll-smooth pb-4 scrollbar-hide"
         >
-          {products.map((product) => {
+          {products.map((product, index) => {
             const productInventory = inventory.find((inv) => inv.product_id === product.id);
             const inStock = productInventory && productInventory.quantity > 0;
             const stockCount = productInventory?.quantity || 0;
@@ -75,15 +76,16 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
               >
                 <div className="h-40 sm:h-56 lg:h-[280px] bg-slate-900/50 flex items-center justify-center overflow-hidden relative">
                   {product.image_url ? (
-                    <img
+                    <ImageWithSkeleton
                       src={product.image_url}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+                      priority={index < 3}
                     />
                   ) : (
                     <Package className="w-12 h-12 sm:w-20 sm:h-20 text-slate-700" />
                   )}
-                  <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+                  <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded z-10">
                     {inStock ? (
                       <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">{stockCount} disponibles</span>
                     ) : (
