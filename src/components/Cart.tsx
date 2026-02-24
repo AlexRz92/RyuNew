@@ -1,5 +1,6 @@
 import { X, Trash2, Plus, Minus } from 'lucide-react';
 import { Product } from '../lib/supabase';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 export interface CartItem {
   product: Product;
@@ -49,7 +50,13 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                       {item.product.image_url ? (
-                        <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
+                        <ImageWithSkeleton
+                          src={item.product.image_url}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover"
+                          preset="cartThumbnail"
+                          priority={false}
+                        />
                       ) : (
                         <div className="w-8 h-8 bg-slate-700 rounded" />
                       )}

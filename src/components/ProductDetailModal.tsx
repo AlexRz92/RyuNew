@@ -50,6 +50,7 @@ export function ProductDetailModal({ product, inventory, onClose, onAddToCart }:
                   alt={product.name}
                   className="w-full h-full object-cover"
                   priority={true}
+                  preset="productDetail"
                 />
               ) : (
                 <div className="w-32 h-32 bg-slate-700 rounded" />

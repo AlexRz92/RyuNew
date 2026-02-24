@@ -26,6 +26,7 @@ export function ProductCard({ product, inventory, onAddToCart, onProductClick, p
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             priority={priority}
+            preset="productCard"
           />
         ) : (
           <Package className="w-12 h-12 sm:w-20 sm:h-20 text-slate-700" />

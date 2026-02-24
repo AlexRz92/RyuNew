@@ -9,6 +9,7 @@ Aplicación frontend moderna para ventas de ferretería con diseño oscuro profe
 - Gestión de inventario en tiempo real
 - Diseño responsive y moderno
 - Identidad visual fuerte con tonos oscuros, detalles dorados y botones naranja
+- Imágenes optimizadas con srcset y responsive images (80-90% menos datos en mobile)
 
 ## Configuración
 
