@@ -7,9 +7,10 @@ interface FeaturedProductsProps {
   products: Product[];
   inventory: Inventory[];
   onProductClick: (product: Product) => void;
+  onAddToCart: (product: Product) => void;
 }
 
-export function FeaturedProducts({ products, inventory, onProductClick }: FeaturedProductsProps) {
+export function FeaturedProducts({ products, inventory, onProductClick, onAddToCart }: FeaturedProductsProps) {
   const [scrollPosition, setScrollPosition] = useState(0);
   const cardWidth = 280;
   const gap = 24;
@@ -110,9 +111,21 @@ export function FeaturedProducts({ products, inventory, onProductClick }: Featur
                       </p>
                     </div>
                     <button
-                      className="bg-orange-600 hover:bg-orange-500 text-white font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 text-xs sm:text-sm w-full sm:w-auto"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (inStock) {
+                          onAddToCart(product);
+                        }
+                      }}
+                      disabled={!inStock}
+                      className={`font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all shadow-lg text-xs sm:text-sm w-full sm:w-auto flex items-center justify-center ${
+                        inStock
+                          ? 'bg-orange-600 hover:bg-orange-500 text-white hover:shadow-orange-500/50'
+                          : 'bg-slate-700 text-slate-500 cursor-not-allowed shadow-none'
+                      }`}
                     >
-                      Ver detalles
+                      Agregar
                     </button>
                   </div>
                 </div>
