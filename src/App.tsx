@@ -88,8 +88,23 @@ function App() {
   }
 
   const filteredProducts = products
-    .filter((p) => selectedCategory ? p.category_id === selectedCategory : true)
-    .filter((p) => searchQuery === '' || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter((p) => (selectedCategory ? p.category_id === selectedCategory : true))
+    .filter((p) =>
+      searchQuery === ''
+        ? true
+        : p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const searchSuggestions =
+    searchQuery.trim() === ''
+      ? []
+      : products
+          .filter((p) =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.description.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .slice(0, 8);
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const startIndex = (currentPage - 1) * productsPerPage;
@@ -209,8 +224,14 @@ function App() {
         <Route path="/perfil" element={<Profile cartItemsCount={totalCartItems} onReplaceCart={replaceCart} />} />
         <Route path="/checkout" element={<Checkout items={cartItems} onClearCart={handleClearCart} />} />
         <Route path="/" element={
-          <>
-      <Header onSearch={handleSearchChange} searchQuery={searchQuery} onLoginClick={handleHeaderLogin} />
+        <>
+      <Header
+        onSearch={handleSearchChange}
+        searchQuery={searchQuery}
+        onLoginClick={handleHeaderLogin}
+        suggestions={searchSuggestions}
+        onSuggestionClick={setSelectedProduct}
+      />
 
       <main className="container mx-auto px-4 py-8 pb-32 max-w-[1800px] overflow-x-hidden">
         {categories.length > 0 && (
