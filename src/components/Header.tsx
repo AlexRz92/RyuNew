@@ -1,14 +1,23 @@
 import { Search, User, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import type { Product } from '../lib/supabase';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
   searchQuery?: string;
   onLoginClick?: () => void;
+  suggestions?: Product[];
+  onSuggestionClick?: (product: Product) => void;
 }
 
-export function Header({ onSearch, searchQuery = '', onLoginClick }: HeaderProps) {
+export function Header({
+  onSearch,
+  searchQuery = '',
+  onLoginClick,
+  suggestions = [],
+  onSuggestionClick,
+}: HeaderProps) {
   const { user } = useAuth();
   return (
     <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 w-full">
@@ -39,6 +48,21 @@ export function Header({ onSearch, searchQuery = '', onLoginClick }: HeaderProps
                     onChange={(e) => onSearch(e.target.value)}
                     className="w-full bg-slate-700/50 border border-amber-500/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500/50 focus:bg-slate-700 transition-all"
                   />
+                  {suggestions.length > 0 && searchQuery && (
+                    <div className="absolute z-20 mt-2 left-0 right-0 bg-slate-900 border border-amber-500/20 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                      {suggestions.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => onSuggestionClick?.(product)}
+                          className="w-full text-left px-3 py-2 text-sm text-slate-100 hover:bg-slate-800 flex flex-col gap-0.5"
+                        >
+                          <span className="font-medium line-clamp-1">{product.name}</span>
+                          <span className="text-xs text-slate-400 line-clamp-1">{product.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
