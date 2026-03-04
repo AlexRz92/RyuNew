@@ -247,6 +247,7 @@ function App() {
             products={featuredProducts}
             inventory={inventory}
             onProductClick={setSelectedProduct}
+            onAddToCart={addToCart}
           />
         )}
 
