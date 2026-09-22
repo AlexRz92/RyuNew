@@ -75,7 +75,7 @@ export function FeaturedProducts({ products, inventory, onProductClick, onAddToC
                 onClick={() => onProductClick(product)}
                 className="flex-shrink-0 w-[160px] sm:w-[240px] lg:w-[280px] bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-lg sm:rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 cursor-pointer group/card"
               >
-                <div className="h-40 sm:h-56 lg:h-[280px] bg-slate-900/50 flex items-center justify-center overflow-hidden relative">
+                <div className="h-40 sm:h-56 lg:h-[280px] bg-slate-900 flex items-center justify-center overflow-hidden relative">
                   {product.image_url ? (
                     <ImageWithSkeleton
                       src={product.image_url}
