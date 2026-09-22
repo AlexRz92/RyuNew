@@ -47,9 +47,9 @@ export function ImageWithSkeleton({
   })();
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-slate-900">
       {!isLoaded && (
-        <div className="absolute inset-0 bg-slate-800/50 animate-pulse" />
+        <div className="absolute inset-0 bg-slate-800 animate-pulse" />
       )}
       <img
         src={imageSrc}

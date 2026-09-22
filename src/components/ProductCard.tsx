@@ -17,7 +17,7 @@ export function ProductCard({ product, inventory, onAddToCart, onProductClick, p
   return (
     <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-lg sm:rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 group flex flex-col h-full">
       <div
-        className="h-40 sm:h-56 lg:h-[280px] bg-slate-900/50 flex items-center justify-center overflow-hidden relative cursor-pointer flex-shrink-0"
+        className="h-40 sm:h-56 lg:h-[280px] bg-slate-900 flex items-center justify-center overflow-hidden relative cursor-pointer flex-shrink-0"
         onClick={() => onProductClick?.(product)}
       >
         {product.image_url ? (

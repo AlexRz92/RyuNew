@@ -7,6 +7,14 @@
     overflow-x: hidden;
     width: 100%;
     position: relative;
+    /* Fondo sólido oscuro de respaldo: evita franjas blancas cuando el
+       navegador no alcanza a repintar el gradiente durante scroll rápido. */
+    background-color: #020617; /* slate-950 */
+  }
+
+  #root {
+    background-color: #020617; /* slate-950 */
+    min-height: 100vh;
   }
 
   * {
