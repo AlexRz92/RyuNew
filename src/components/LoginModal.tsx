@@ -105,14 +105,14 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-amber-500/20">
-          <h2 className="text-2xl font-bold text-white">
+      <div className="relative bg-bg-elevated border border-line rounded-xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-line">
+          <h2 className="text-2xl font-bold text-content">
             {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-lg"
+            className="text-content-muted hover:text-content transition-colors p-2 hover:bg-surface rounded-lg"
           >
             <X className="w-6 h-6" />
           </button>
@@ -120,30 +120,30 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           <div>
-            <label className="block text-slate-300 text-sm mb-2">Email</label>
+            <label className="block text-content-soft text-sm mb-2">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                className="w-full bg-bg-subtle border border-line rounded-lg pl-10 pr-4 py-3 text-content focus:border-brand focus:outline-none"
                 placeholder="tu@email.com"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-300 text-sm mb-2">Contraseña</label>
+            <label className="block text-content-soft text-sm mb-2">Contraseña</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                className="w-full bg-bg-subtle border border-line rounded-lg pl-10 pr-4 py-3 text-content focus:border-brand focus:outline-none"
                 placeholder="••••••••"
                 minLength={6}
               />
@@ -153,48 +153,48 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           {!isLogin && (
             <>
               <div>
-                <label className="block text-slate-300 text-sm mb-2">Nombre *</label>
+                <label className="block text-content-soft text-sm mb-2">Nombre *</label>
                 <input
                   type="text"
                   required
                   value={profileData.first_name}
                   onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none"
                   placeholder="Juan"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm mb-2">Apellido *</label>
+                <label className="block text-content-soft text-sm mb-2">Apellido *</label>
                 <input
                   type="text"
                   required
                   value={profileData.last_name}
                   onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none"
                   placeholder="Pérez"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm mb-2">Teléfono</label>
+                <label className="block text-content-soft text-sm mb-2">Teléfono</label>
                 <input
                   type="tel"
                   value={profileData.phone}
                   onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none"
                   placeholder="0424-1234567"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 text-sm mb-2">Estado *</label>
+                  <label className="block text-content-soft text-sm mb-2">Estado *</label>
                   <select
                     required
                     value={profileData.state}
                     onChange={(e) => handleStateChange(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+                    className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none"
                   >
                     <option value="">Seleccionar</option>
                     {states.map((state) => (
@@ -206,13 +206,13 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm mb-2">Ciudad *</label>
+                  <label className="block text-content-soft text-sm mb-2">Ciudad *</label>
                   <select
                     required
                     value={profileData.city}
                     onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
                     disabled={!profileData.state}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Seleccionar</option>
                     {profileData.state && getCitiesByState(profileData.state).map((city) => (
@@ -235,7 +235,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-brand hover:bg-brand-hover text-brand-contrast font-bold py-3 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -263,7 +263,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
                   city: '',
                 });
               }}
-              className="text-amber-400 hover:text-amber-300 text-sm transition-colors"
+              className="text-accent hover:text-accent-hover text-sm transition-colors"
             >
               {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
             </button>

@@ -142,7 +142,7 @@ export function BankAccountsAdmin() {
       {error && <ErrorBanner message={error} />}
 
       {loading ? (
-        <p className="text-slate-400">Cargando...</p>
+        <p className="text-content-muted">Cargando...</p>
       ) : accounts.length === 0 ? (
         <Card>
           <EmptyState message="No hay cuentas bancarias. Crea la primera." />
@@ -152,11 +152,11 @@ export function BankAccountsAdmin() {
           {accounts.map((account) => (
             <Card key={account.id} className="p-4">
               <div className="flex justify-between items-start gap-2 mb-2">
-                <h3 className="text-amber-400 font-semibold">{account.label}</h3>
+                <h3 className="text-accent font-semibold">{account.label}</h3>
                 <div className="flex gap-1">
                   <button
                     onClick={() => openEdit(account)}
-                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+                    className="p-2 text-content-muted hover:text-content hover:bg-surface-hover rounded-lg"
                     aria-label="Editar"
                   >
                     <Pencil className="w-4 h-4" />
@@ -170,14 +170,14 @@ export function BankAccountsAdmin() {
                   </button>
                 </div>
               </div>
-              <div className="text-sm space-y-1 text-slate-300">
+              <div className="text-sm space-y-1 text-content-soft">
                 <p>{account.bank_name}</p>
                 <p>{account.account_holder}</p>
                 <p className="font-mono">{account.account_number}</p>
-                <p className="text-slate-500">{account.document_id}</p>
+                <p className="text-content-muted">{account.document_id}</p>
               </div>
               {!account.is_active && (
-                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-slate-700 text-slate-400">
+                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-surface-hover text-content-muted">
                   Inactiva
                 </span>
               )}
@@ -253,12 +253,12 @@ export function BankAccountsAdmin() {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </Field>
-          <label className="flex items-center gap-2 text-slate-300 text-sm cursor-pointer">
+          <label className="flex items-center gap-2 text-content-soft text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={form.is_active}
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-              className="w-4 h-4 accent-orange-600"
+              className="w-4 h-4 accent-brand"
             />
             Activa (visible en el checkout)
           </label>

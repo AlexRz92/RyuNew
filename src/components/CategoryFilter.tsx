@@ -1,3 +1,4 @@
+import { LayoutGrid } from 'lucide-react';
 import type { Category } from '../lib/types';
 
 interface CategoryFilterProps {
@@ -8,33 +9,64 @@ interface CategoryFilterProps {
 
 export function CategoryFilter({ categories, selectedCategory, onSelectCategory }: CategoryFilterProps) {
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 mb-6">
-      <h3 className="text-amber-400 font-semibold mb-3 text-xs sm:text-sm uppercase tracking-wider">Categorías</h3>
-      <div className="flex flex-nowrap lg:flex-wrap gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
-        <button
+    <div className="mb-8">
+      <h3 className="text-content font-semibold mb-3 text-sm uppercase tracking-wider">
+        Explorar categorías
+      </h3>
+      <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
+        <CategoryPill
+          active={selectedCategory === null}
           onClick={() => onSelectCategory(null)}
-          className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all whitespace-nowrap text-sm ${
-            selectedCategory === null
-              ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30'
-              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-          }`}
-        >
-          Todos
-        </button>
+          label="Todos"
+          imageUrl=""
+        />
         {categories.map((category) => (
-          <button
+          <CategoryPill
             key={category.id}
+            active={selectedCategory === category.id}
             onClick={() => onSelectCategory(category.id)}
-            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all whitespace-nowrap text-sm ${
-              selectedCategory === category.id
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30'
-                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-            }`}
-          >
-            {category.name}
-          </button>
+            label={category.name}
+            imageUrl={category.image_url}
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+interface CategoryPillProps {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  imageUrl: string;
+}
+
+function CategoryPill({ active, onClick, label, imageUrl }: CategoryPillProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`group flex flex-col items-center gap-2 flex-shrink-0 w-24 focus:outline-none`}
+    >
+      <div
+        className={`w-20 h-20 rounded-2xl flex items-center justify-center overflow-hidden border-2 transition-all ${
+          active
+            ? 'border-brand ring-2 ring-brand/30 shadow-card-hover'
+            : 'border-line bg-surface group-hover:border-brand/50 group-hover:shadow-card'
+        }`}
+      >
+        {imageUrl ? (
+          <img src={imageUrl} alt={label} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <LayoutGrid className={`w-8 h-8 ${active ? 'text-brand' : 'text-content-muted'}`} />
+        )}
+      </div>
+      <span
+        className={`text-xs font-medium text-center line-clamp-2 leading-tight ${
+          active ? 'text-brand' : 'text-content-soft group-hover:text-content'
+        }`}
+      >
+        {label}
+      </span>
+    </button>
   );
 }

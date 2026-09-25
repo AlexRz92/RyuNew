@@ -2,6 +2,7 @@ import { Search, User, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { storeConfig } from '../config/store.config';
+import { ThemeToggle } from './ThemeToggle';
 import type { Product } from '../lib/types';
 
 interface HeaderProps {
@@ -23,78 +24,76 @@ export function Header({
   const { name, branding } = storeConfig;
 
   return (
-    <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 w-full">
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4">
-            <Link to="/" className="flex items-center gap-3">
-              {branding.logo && (
-                <img
-                  src={branding.logo}
-                  alt={`${name} logo`}
-                  className="h-20 md:h-28 lg:h-32 w-auto object-contain"
-                />
-              )}
-              {branding.logoText ? (
-                <img
-                  src={branding.logoText}
-                  alt={name}
-                  className="h-8 md:h-12 lg:h-16 w-auto object-contain"
-                />
-              ) : (
-                <span className="text-2xl md:text-3xl font-bold text-white">{name}</span>
-              )}
-            </Link>
-
-            {onSearch && (
-              <div className="w-full md:max-w-md">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Buscar productos..."
-                    value={searchQuery}
-                    onChange={(e) => onSearch(e.target.value)}
-                    className="w-full bg-slate-700/50 border border-amber-500/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500/50 focus:bg-slate-700 transition-all"
-                  />
-                  {suggestions.length > 0 && searchQuery && (
-                    <div className="absolute z-20 mt-2 left-0 right-0 bg-slate-900 border border-amber-500/20 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      {suggestions.map((product) => (
-                        <button
-                          key={product.id}
-                          type="button"
-                          onClick={() => onSuggestionClick?.(product)}
-                          className="w-full text-left px-3 py-2 text-sm text-slate-100 hover:bg-slate-800 flex flex-col gap-0.5"
-                        >
-                          <span className="font-medium line-clamp-1">{product.name}</span>
-                          <span className="text-xs text-slate-400 line-clamp-1">{product.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+    <header className="sticky top-0 z-30 bg-bg-elevated/90 backdrop-blur-md border-b border-line">
+      <div className="container mx-auto px-4 py-3 md:py-4">
+        <div className="flex items-center gap-4 md:gap-6">
+          {/* Marca */}
+          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
+            {branding.logo ? (
+              <img src={branding.logo} alt={name} className="h-9 md:h-11 w-auto object-contain" />
+            ) : (
+              <span className="inline-flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-xl bg-brand text-brand-contrast font-bold text-lg">
+                {name.charAt(0)}
+              </span>
             )}
+            {branding.logoText ? (
+              <img src={branding.logoText} alt={name} className="h-7 md:h-9 w-auto object-contain" />
+            ) : (
+              <span className="text-lg md:text-xl font-bold text-content tracking-tight hidden sm:block">
+                {name}
+              </span>
+            )}
+          </Link>
 
-            <div className="flex-shrink-0">
-              {user ? (
-                <Link
-                  to="/perfil"
-                  className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
-                >
-                  <User className="w-5 h-5" />
-                  <span className="text-sm">Mi Perfil</span>
-                </Link>
-              ) : (
-                <button
-                  onClick={onLoginClick}
-                  className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
-                >
-                  <LogIn className="w-5 h-5" />
-                  <span className="text-sm">Iniciar sesión</span>
-                </button>
+          {/* Buscador */}
+          {onSearch && (
+            <div className="flex-1 max-w-2xl relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={searchQuery}
+                onChange={(e) => onSearch(e.target.value)}
+                className="w-full bg-bg-subtle border border-line rounded-full pl-11 pr-4 py-2.5 text-content placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-all"
+              />
+              {suggestions.length > 0 && searchQuery && (
+                <div className="absolute z-20 mt-2 left-0 right-0 bg-bg-elevated border border-line rounded-xl shadow-card-hover max-h-72 overflow-y-auto overflow-hidden">
+                  {suggestions.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => onSuggestionClick?.(product)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-content hover:bg-surface-hover flex flex-col gap-0.5 border-b border-line last:border-0"
+                    >
+                      <span className="font-medium line-clamp-1">{product.name}</span>
+                      <span className="text-xs text-content-muted line-clamp-1">{product.description}</span>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
+          )}
+
+          {/* Acciones */}
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 ml-auto">
+            <ThemeToggle />
+            {user ? (
+              <Link
+                to="/perfil"
+                className="flex items-center gap-2 bg-surface hover:bg-surface-hover border border-line text-content px-3 md:px-4 py-2 rounded-full transition-colors font-medium"
+              >
+                <User className="w-5 h-5" />
+                <span className="text-sm hidden sm:block">Mi Perfil</span>
+              </Link>
+            ) : (
+              <button
+                onClick={onLoginClick}
+                className="flex items-center gap-2 bg-brand hover:bg-brand-hover text-brand-contrast px-3 md:px-5 py-2 rounded-full transition-colors font-semibold"
+              >
+                <LogIn className="w-5 h-5" />
+                <span className="text-sm hidden sm:block">Iniciar sesión</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

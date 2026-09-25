@@ -30,7 +30,7 @@ import { AdminsAdmin } from './pages/admin/AdminsAdmin';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 overflow-x-hidden">
+    <div className="min-h-screen bg-bg-subtle overflow-x-hidden">
       <Routes>
         <Route path="/" element={<Storefront />} />
         <Route path="/perfil" element={<ProfileRoute />} />
@@ -138,10 +138,10 @@ function Storefront() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-bg-subtle flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
-          <p className="text-slate-400">Cargando productos...</p>
+          <Loader2 className="w-12 h-12 text-brand animate-spin mx-auto mb-4" />
+          <p className="text-content-muted">Cargando productos...</p>
         </div>
       </div>
     );
@@ -180,14 +180,14 @@ function Storefront() {
 
         {filteredProducts.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-slate-400 text-lg">{storeConfig.content.emptyCatalog}</p>
+            <p className="text-content-muted text-lg">{storeConfig.content.emptyCatalog}</p>
           </div>
         ) : (
           <div id="products-listing" className="mb-8">
             <div className="flex items-center justify-center mb-6">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-              <h2 className="text-2xl font-bold text-white px-6">{mainListingTitle}</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
+              <h2 className="text-2xl font-bold text-content px-6">{mainListingTitle}</h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-6 mb-8">
@@ -278,13 +278,13 @@ interface PaginationProps {
 function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   return (
     <div className="flex flex-col items-center gap-6 mt-12">
-      <div className="h-px w-24 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+      <div className="h-px w-24 bg-gradient-to-r from-transparent via-line to-transparent" />
 
       <div className="flex items-center justify-center gap-3 flex-wrap">
         <button
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
-          className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-amber-500/20 hover:border-amber-500/40"
+          className="p-2.5 bg-surface hover:bg-surface-hover text-content-soft rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-line hover:border-brand/40"
           title="Página anterior"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -303,8 +303,8 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
                 onClick={() => onPageChange(pageNum)}
                 className={`px-3.5 py-2 rounded-lg font-semibold transition-all ${
                   currentPage === pageNum
-                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30 border border-orange-500/50'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-amber-500/20 hover:border-amber-500/40'
+                    ? 'bg-brand text-brand-contrast shadow-card border border-brand'
+                    : 'bg-surface hover:bg-surface-hover text-content-soft border border-line hover:border-brand/40'
                 }`}
               >
                 {pageNum}
@@ -316,19 +316,19 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         <button
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-amber-500/20 hover:border-amber-500/40"
+          className="p-2.5 bg-surface hover:bg-surface-hover text-content-soft rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-line hover:border-brand/40"
           title="Página siguiente"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="text-slate-400 text-sm">
-        Página <span className="text-amber-400 font-semibold">{currentPage}</span> de{' '}
-        <span className="text-amber-400 font-semibold">{totalPages}</span>
+      <div className="text-content-muted text-sm">
+        Página <span className="text-brand font-semibold">{currentPage}</span> de{' '}
+        <span className="text-brand font-semibold">{totalPages}</span>
       </div>
 
-      <div className="h-px w-24 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+      <div className="h-px w-24 bg-gradient-to-r from-transparent via-line to-transparent" />
     </div>
   );
 }

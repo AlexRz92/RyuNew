@@ -86,7 +86,7 @@ export function OrdersAdmin() {
             key={s}
             onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
-              filter === s ? 'bg-orange-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+              filter === s ? 'bg-brand text-brand-contrast' : 'bg-surface text-content-muted hover:text-content'
             }`}
           >
             {s === 'all' ? 'Todos' : s}
@@ -96,13 +96,13 @@ export function OrdersAdmin() {
 
       <Card className="overflow-hidden">
         {loading ? (
-          <p className="text-slate-400 p-6">Cargando...</p>
+          <p className="text-content-muted p-6">Cargando...</p>
         ) : filtered.length === 0 ? (
           <EmptyState message="No hay pedidos" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950 text-slate-400">
+              <thead className="bg-bg-subtle text-content-muted">
                 <tr>
                   <th className="text-left p-3 font-medium">Código</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Cliente</th>
@@ -114,13 +114,13 @@ export function OrdersAdmin() {
               </thead>
               <tbody>
                 {filtered.map((order) => (
-                  <tr key={order.id} className="border-t border-slate-800">
-                    <td className="p-3 text-white font-medium">{order.tracking_code}</td>
-                    <td className="p-3 text-slate-400 hidden md:table-cell">{order.customer_name}</td>
-                    <td className="p-3 text-slate-400 hidden lg:table-cell">
+                  <tr key={order.id} className="border-t border-line">
+                    <td className="p-3 text-content font-medium">{order.tracking_code}</td>
+                    <td className="p-3 text-content-muted hidden md:table-cell">{order.customer_name}</td>
+                    <td className="p-3 text-content-muted hidden lg:table-cell">
                       {formatDate(order.created_at)}
                     </td>
-                    <td className="p-3 text-amber-400 font-semibold">
+                    <td className="p-3 text-accent font-semibold">
                       {formatCurrency(order.total_amount)}
                     </td>
                     <td className="p-3">
@@ -142,7 +142,7 @@ export function OrdersAdmin() {
                         </Select>
                         <button
                           onClick={() => openDetail(order)}
-                          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+                          className="p-2 text-content-muted hover:text-content hover:bg-surface-hover rounded-lg"
                           aria-label="Ver detalle"
                         >
                           <Eye className="w-4 h-4" />
@@ -167,16 +167,16 @@ export function OrdersAdmin() {
           </div>
 
           {detail.notes && (
-            <div className="bg-slate-950 border border-slate-800 rounded-lg p-3">
-              <p className="text-slate-400 text-xs mb-1">Notas / Envío</p>
-              <p className="text-slate-200 text-sm whitespace-pre-line">{detail.notes}</p>
+            <div className="bg-bg-subtle border border-line rounded-lg p-3">
+              <p className="text-content-muted text-xs mb-1">Notas / Envío</p>
+              <p className="text-content-soft text-sm whitespace-pre-line">{detail.notes}</p>
             </div>
           )}
 
           <div>
-            <p className="text-slate-400 text-xs mb-2">Productos</p>
+            <p className="text-content-muted text-xs mb-2">Productos</p>
             {detailLoading ? (
-              <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <div className="flex items-center gap-2 text-content-muted text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" /> Cargando...
               </div>
             ) : (
@@ -184,12 +184,12 @@ export function OrdersAdmin() {
                 {detailItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between bg-slate-950 rounded-lg p-2.5 text-sm"
+                    className="flex justify-between bg-bg-subtle rounded-lg p-2.5 text-sm"
                   >
-                    <span className="text-slate-200">
-                      {item.product_name} <span className="text-slate-500">x{item.quantity}</span>
+                    <span className="text-content-soft">
+                      {item.product_name} <span className="text-content-muted">x{item.quantity}</span>
                     </span>
-                    <span className="text-amber-400 font-semibold">
+                    <span className="text-accent font-semibold">
                       {formatCurrency(item.subtotal || item.product_price * item.quantity)}
                     </span>
                   </div>
@@ -198,9 +198,9 @@ export function OrdersAdmin() {
             )}
           </div>
 
-          <div className="flex justify-between items-center pt-2 border-t border-slate-800">
-            <span className="text-white font-semibold">Total</span>
-            <span className="text-amber-400 text-xl font-bold">
+          <div className="flex justify-between items-center pt-2 border-t border-line">
+            <span className="text-content font-semibold">Total</span>
+            <span className="text-accent text-xl font-bold">
               {formatCurrency(detail.total_amount)}
             </span>
           </div>
@@ -210,17 +210,17 @@ export function OrdersAdmin() {
               href={detail.payment_proof_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center justify-center gap-2 bg-surface hover:bg-surface-hover text-content py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
               <ExternalLink className="w-4 h-4" />
               Ver comprobante de pago
             </a>
           ) : (
-            <p className="text-slate-500 text-sm text-center">Sin comprobante de pago</p>
+            <p className="text-content-muted text-sm text-center">Sin comprobante de pago</p>
           )}
 
           <div>
-            <p className="text-slate-400 text-xs mb-2">Cambiar estado</p>
+            <p className="text-content-muted text-xs mb-2">Cambiar estado</p>
             <div className="flex gap-2 flex-wrap">
               {STATUSES.map((s) => (
                 <Button
@@ -244,8 +244,8 @@ export function OrdersAdmin() {
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-slate-400 text-xs">{label}</p>
-      <p className="text-slate-200 capitalize">{value}</p>
+      <p className="text-content-muted text-xs">{label}</p>
+      <p className="text-content-soft capitalize">{value}</p>
     </div>
   );
 }

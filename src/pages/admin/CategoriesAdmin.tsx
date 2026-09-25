@@ -104,7 +104,7 @@ export function CategoriesAdmin() {
       {error && <ErrorBanner message={error} />}
 
       {loading ? (
-        <p className="text-slate-400">Cargando...</p>
+        <p className="text-content-muted">Cargando...</p>
       ) : categories.length === 0 ? (
         <Card>
           <EmptyState message="No hay categorías. Crea la primera." />
@@ -115,13 +115,13 @@ export function CategoriesAdmin() {
             <Card key={category.id} className="p-4">
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
-                  <h3 className="text-white font-semibold truncate">{category.name}</h3>
-                  <p className="text-slate-400 text-sm mt-1 line-clamp-2">{category.description}</p>
+                  <h3 className="text-content font-semibold truncate">{category.name}</h3>
+                  <p className="text-content-muted text-sm mt-1 line-clamp-2">{category.description}</p>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => openEdit(category)}
-                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+                    className="p-2 text-content-muted hover:text-content hover:bg-surface-hover rounded-lg"
                     aria-label="Editar"
                   >
                     <Pencil className="w-4 h-4" />

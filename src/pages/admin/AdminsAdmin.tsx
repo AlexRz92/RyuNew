@@ -59,13 +59,13 @@ export function AdminsAdmin() {
 
       <Card className="overflow-hidden">
         {loading ? (
-          <p className="text-slate-400 p-6">Cargando...</p>
+          <p className="text-content-muted p-6">Cargando...</p>
         ) : admins.length === 0 ? (
           <EmptyState message="No hay administradores registrados" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950 text-slate-400">
+              <thead className="bg-bg-subtle text-content-muted">
                 <tr>
                   <th className="text-left p-3 font-medium">User ID</th>
                   <th className="text-left p-3 font-medium">Rol</th>
@@ -76,16 +76,16 @@ export function AdminsAdmin() {
               </thead>
               <tbody>
                 {admins.map((admin) => (
-                  <tr key={admin.user_id} className="border-t border-slate-800">
-                    <td className="p-3 text-slate-300 font-mono text-xs">{admin.user_id}</td>
-                    <td className="p-3 text-slate-300 capitalize">{admin.role}</td>
-                    <td className="p-3 text-slate-400 hidden sm:table-cell">
+                  <tr key={admin.user_id} className="border-t border-line">
+                    <td className="p-3 text-content-soft font-mono text-xs">{admin.user_id}</td>
+                    <td className="p-3 text-content-soft capitalize">{admin.role}</td>
+                    <td className="p-3 text-content-muted hidden sm:table-cell">
                       {formatDate(admin.created_at)}
                     </td>
                     <td className="p-3 text-center">
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                          admin.is_active ? 'bg-green-400/10 text-green-400' : 'bg-slate-700 text-slate-400'
+                          admin.is_active ? 'bg-green-400/10 text-green-400' : 'bg-surface-hover text-content-muted'
                         }`}
                       >
                         {admin.is_active ? 'Activo' : 'Inactivo'}

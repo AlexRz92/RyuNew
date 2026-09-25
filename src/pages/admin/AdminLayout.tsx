@@ -37,8 +37,8 @@ export function AdminLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400">Verificando acceso...</p>
+      <div className="min-h-screen bg-bg-subtle flex items-center justify-center">
+        <p className="text-content-muted">Verificando acceso...</p>
       </div>
     );
   }
@@ -54,18 +54,18 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-bg-subtle flex">
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-bg-elevated border-r border-line flex flex-col transition-transform ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="p-6 border-b border-slate-800 flex items-center gap-2">
-          <Store className="w-6 h-6 text-amber-400" />
+        <div className="p-6 border-b border-line flex items-center gap-2">
+          <Store className="w-6 h-6 text-accent" />
           <div>
-            <p className="text-white font-bold leading-tight">{storeConfig.name}</p>
-            <p className="text-slate-500 text-xs">Panel de administración</p>
+            <p className="text-content font-bold leading-tight">{storeConfig.name}</p>
+            <p className="text-content-muted text-xs">Panel de administración</p>
           </div>
         </div>
 
@@ -79,8 +79,8 @@ export function AdminLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-orange-600 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-brand text-brand-contrast'
+                    : 'text-content-muted hover:bg-surface hover:text-content'
                 }`
               }
             >
@@ -90,10 +90,10 @@ export function AdminLayout() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-slate-800 space-y-1">
+        <div className="p-3 border-t border-line space-y-1">
           <button
             onClick={() => navigate('/')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-content-muted hover:bg-surface hover:text-content transition-colors"
           >
             <Store className="w-5 h-5" />
             Ver tienda
@@ -114,11 +114,11 @@ export function AdminLayout() {
 
       {/* Contenido */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden bg-slate-900 border-b border-slate-800 p-4 flex items-center gap-3">
-          <button onClick={() => setMobileOpen(true)} className="text-white" aria-label="Abrir menú">
+        <header className="lg:hidden bg-bg-elevated border-b border-line p-4 flex items-center gap-3">
+          <button onClick={() => setMobileOpen(true)} className="text-content" aria-label="Abrir menú">
             <Menu className="w-6 h-6" />
           </button>
-          <span className="text-white font-semibold">{storeConfig.name} · Admin</span>
+          <span className="text-content font-semibold">{storeConfig.name} · Admin</span>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
