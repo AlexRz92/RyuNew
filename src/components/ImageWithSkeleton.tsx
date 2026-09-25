@@ -86,9 +86,9 @@ export function ImageWithSkeleton({
   }, [priority, shouldLoad]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-slate-900">
+    <div ref={containerRef} className="relative w-full h-full bg-bg-subtle">
       {!isLoaded && (
-        <div className="absolute inset-0 bg-slate-800 animate-pulse" />
+        <div className="absolute inset-0 bg-surface-hover animate-pulse" />
       )}
       {shouldLoad && (
         <img

@@ -83,13 +83,13 @@ export function InventoryAdmin() {
 
       <Card className="overflow-hidden">
         {loading ? (
-          <p className="text-slate-400 p-6">Cargando...</p>
+          <p className="text-content-muted p-6">Cargando...</p>
         ) : filtered.length === 0 ? (
           <EmptyState message="Sin productos" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950 text-slate-400">
+              <thead className="bg-bg-subtle text-content-muted">
                 <tr>
                   <th className="text-left p-3 font-medium">Producto</th>
                   <th className="text-left p-3 font-medium hidden sm:table-cell">SKU</th>
@@ -101,9 +101,9 @@ export function InventoryAdmin() {
                 {filtered.map((row) => {
                   const changed = row.quantity !== row.original;
                   return (
-                    <tr key={row.product.id} className="border-t border-slate-800">
-                      <td className="p-3 text-white font-medium">{row.product.name}</td>
-                      <td className="p-3 text-slate-400 hidden sm:table-cell">{row.product.sku}</td>
+                    <tr key={row.product.id} className="border-t border-line">
+                      <td className="p-3 text-content font-medium">{row.product.name}</td>
+                      <td className="p-3 text-content-muted hidden sm:table-cell">{row.product.sku}</td>
                       <td className="p-3">
                         <Input
                           type="number"

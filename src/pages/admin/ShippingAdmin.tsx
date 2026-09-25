@@ -143,13 +143,13 @@ export function ShippingAdmin() {
 
       <Card className="overflow-hidden">
         {loading ? (
-          <p className="text-slate-400 p-6">Cargando...</p>
+          <p className="text-content-muted p-6">Cargando...</p>
         ) : rules.length === 0 ? (
           <EmptyState message="No hay reglas de envío. Crea la primera." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950 text-slate-400">
+              <thead className="bg-bg-subtle text-content-muted">
                 <tr>
                   <th className="text-left p-3 font-medium">Estado</th>
                   <th className="text-left p-3 font-medium">Ciudad</th>
@@ -160,14 +160,14 @@ export function ShippingAdmin() {
               </thead>
               <tbody>
                 {rules.map((rule) => (
-                  <tr key={rule.id} className="border-t border-slate-800">
-                    <td className="p-3 text-slate-300">{rule.state}</td>
-                    <td className="p-3 text-white font-medium">{rule.city}</td>
+                  <tr key={rule.id} className="border-t border-line">
+                    <td className="p-3 text-content-soft">{rule.state}</td>
+                    <td className="p-3 text-content font-medium">{rule.city}</td>
                     <td className="p-3">
                       {rule.is_free ? (
                         <span className="text-green-400 font-semibold">Gratis</span>
                       ) : (
-                        <span className="text-amber-400 font-semibold">
+                        <span className="text-accent font-semibold">
                           {formatCurrency(rule.base_cost)}
                         </span>
                       )}
@@ -175,7 +175,7 @@ export function ShippingAdmin() {
                     <td className="p-3 text-center">
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                          rule.is_active ? 'bg-green-400/10 text-green-400' : 'bg-slate-700 text-slate-400'
+                          rule.is_active ? 'bg-green-400/10 text-green-400' : 'bg-surface-hover text-content-muted'
                         }`}
                       >
                         {rule.is_active ? 'Sí' : 'No'}
@@ -185,7 +185,7 @@ export function ShippingAdmin() {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => openEdit(rule)}
-                          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+                          className="p-2 text-content-muted hover:text-content hover:bg-surface-hover rounded-lg"
                           aria-label="Editar"
                         >
                           <Pencil className="w-4 h-4" />
@@ -252,12 +252,12 @@ export function ShippingAdmin() {
             </Field>
           </div>
 
-          <label className="flex items-center gap-2 text-slate-300 text-sm cursor-pointer">
+          <label className="flex items-center gap-2 text-content-soft text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={form.is_free}
               onChange={(e) => setForm({ ...form, is_free: e.target.checked })}
-              className="w-4 h-4 accent-orange-600"
+              className="w-4 h-4 accent-brand"
             />
             Envío gratis
           </label>
@@ -282,12 +282,12 @@ export function ShippingAdmin() {
             />
           </Field>
 
-          <label className="flex items-center gap-2 text-slate-300 text-sm cursor-pointer">
+          <label className="flex items-center gap-2 text-content-soft text-sm cursor-pointer">
             <input
               type="checkbox"
               checked={form.is_active}
               onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-              className="w-4 h-4 accent-orange-600"
+              className="w-4 h-4 accent-brand"
             />
             Activa
           </label>

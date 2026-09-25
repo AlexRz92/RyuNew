@@ -150,13 +150,13 @@ export function ProductsAdmin() {
 
       <Card className="overflow-hidden">
         {loading ? (
-          <p className="text-slate-400 p-6">Cargando...</p>
+          <p className="text-content-muted p-6">Cargando...</p>
         ) : products.length === 0 ? (
           <EmptyState message="No hay productos. Crea el primero." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950 text-slate-400">
+              <thead className="bg-bg-subtle text-content-muted">
                 <tr>
                   <th className="text-left p-3 font-medium">Producto</th>
                   <th className="text-left p-3 font-medium hidden md:table-cell">Categoría</th>
@@ -168,26 +168,26 @@ export function ProductsAdmin() {
               </thead>
               <tbody>
                 {products.map((product) => (
-                  <tr key={product.id} className="border-t border-slate-800 hover:bg-slate-850">
+                  <tr key={product.id} className="border-t border-line hover:bg-surface-hover">
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         {product.is_featured && (
-                          <Star className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
+                          <Star className="w-4 h-4 text-accent fill-accent flex-shrink-0" />
                         )}
-                        <span className="text-white font-medium">{product.name}</span>
+                        <span className="text-content font-medium">{product.name}</span>
                       </div>
                     </td>
-                    <td className="p-3 text-slate-400 hidden md:table-cell">
+                    <td className="p-3 text-content-muted hidden md:table-cell">
                       {categoryName(product.category_id)}
                     </td>
-                    <td className="p-3 text-amber-400 font-semibold">{formatCurrency(product.price)}</td>
-                    <td className="p-3 text-slate-400 hidden sm:table-cell">{product.sku}</td>
+                    <td className="p-3 text-accent font-semibold">{formatCurrency(product.price)}</td>
+                    <td className="p-3 text-content-muted hidden sm:table-cell">{product.sku}</td>
                     <td className="p-3 text-center">
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                           product.is_active
                             ? 'bg-green-400/10 text-green-400'
-                            : 'bg-slate-700 text-slate-400'
+                            : 'bg-surface-hover text-content-muted'
                         }`}
                       >
                         {product.is_active ? 'Activo' : 'Inactivo'}
@@ -197,7 +197,7 @@ export function ProductsAdmin() {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => openEdit(product)}
-                          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"
+                          className="p-2 text-content-muted hover:text-content hover:bg-surface-hover rounded-lg"
                           aria-label="Editar"
                         >
                           <Pencil className="w-4 h-4" />
@@ -282,25 +282,25 @@ export function ProductsAdmin() {
             <img
               src={form.image_url}
               alt="Vista previa"
-              className="w-24 h-24 object-cover rounded-lg border border-slate-700"
+              className="w-24 h-24 object-cover rounded-lg border border-line"
             />
           )}
           <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-slate-300 text-sm cursor-pointer">
+            <label className="flex items-center gap-2 text-content-soft text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                className="w-4 h-4 accent-orange-600"
+                className="w-4 h-4 accent-brand"
               />
               Activo
             </label>
-            <label className="flex items-center gap-2 text-slate-300 text-sm cursor-pointer">
+            <label className="flex items-center gap-2 text-content-soft text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={form.is_featured}
                 onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
-                className="w-4 h-4 accent-orange-600"
+                className="w-4 h-4 accent-brand"
               />
               Destacado
             </label>

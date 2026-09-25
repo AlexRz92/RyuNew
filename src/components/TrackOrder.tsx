@@ -40,10 +40,10 @@ export function TrackOrder() {
 
   return (
     <div>
-      <div className="bg-slate-900/50 border border-amber-500/20 rounded-xl p-6 mb-6">
+      <div className="bg-bg-subtle border border-line rounded-xl p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
-          <Package className="w-6 h-6 text-amber-400" />
-          <h2 className="text-2xl font-bold text-white">Rastrear Pedido</h2>
+          <Package className="w-6 h-6 text-accent" />
+          <h2 className="text-2xl font-bold text-content">Rastrear Pedido</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-3">
@@ -52,13 +52,13 @@ export function TrackOrder() {
             value={trackingCode}
             onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
             placeholder="Ingresa tu código de seguimiento"
-            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+            className="flex-1 bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none"
             required
           />
           <button
             type="submit"
             disabled={loading || !trackingCode.trim()}
-            className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="bg-brand hover:bg-brand-hover text-brand-contrast font-bold px-6 py-3 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
           </button>
@@ -72,11 +72,11 @@ export function TrackOrder() {
       )}
 
       {result && (
-        <div className="bg-slate-900/50 border border-amber-500/20 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6 pb-6 border-b border-amber-500/20">
+        <div className="bg-bg-subtle border border-line rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6 pb-6 border-b border-line">
             <div>
-              <h3 className="text-amber-400 text-sm font-semibold mb-1">Código de Seguimiento</h3>
-              <p className="text-white text-2xl font-bold tracking-wider">{result.tracking_code}</p>
+              <h3 className="text-accent text-sm font-semibold mb-1">Código de Seguimiento</h3>
+              <p className="text-content text-2xl font-bold tracking-wider">{result.tracking_code}</p>
             </div>
             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${statusConfig[result.status].bg}`}>
               {(() => {
@@ -89,9 +89,9 @@ export function TrackOrder() {
             </div>
           </div>
 
-          <div className="mb-6 pb-6 border-b border-amber-500/20">
-            <p className="text-slate-400 text-sm mb-3">Fecha de Pedido</p>
-            <p className="text-white mb-6">
+          <div className="mb-6 pb-6 border-b border-line">
+            <p className="text-content-muted text-sm mb-3">Fecha de Pedido</p>
+            <p className="text-content mb-6">
               {formatDate(result.created_at, {
                 year: 'numeric',
                 month: 'long',
@@ -103,25 +103,25 @@ export function TrackOrder() {
           </div>
 
           <div className="mb-6">
-            <h4 className="text-white font-semibold mb-3">Productos</h4>
+            <h4 className="text-content font-semibold mb-3">Productos</h4>
             <div className="space-y-3">
               {result.items.map((item, index) => (
-                <div key={index} className="bg-slate-900/50 border border-amber-500/10 rounded-lg p-4">
+                <div key={index} className="bg-bg-subtle border border-line rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-white font-semibold flex-1">{item.name}</p>
-                    <p className="text-amber-400 font-bold">{formatCurrency(item.quantity * item.price)}</p>
+                    <p className="text-content font-semibold flex-1">{item.name}</p>
+                    <p className="text-accent font-bold">{formatCurrency(item.quantity * item.price)}</p>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <p className="text-slate-400">Cantidad: {item.quantity}</p>
-                    <p className="text-slate-400">{formatCurrency(item.price)} c/u</p>
+                    <p className="text-content-muted">Cantidad: {item.quantity}</p>
+                    <p className="text-content-muted">{formatCurrency(item.price)} c/u</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-4">
-            <h4 className="text-white font-semibold mb-3">Resumen del Pedido</h4>
+          <div className="bg-bg-subtle border border-line rounded-lg p-4">
+            <h4 className="text-content font-semibold mb-3">Resumen del Pedido</h4>
             <div className="space-y-2">
               {(() => {
                 const subtotal = result.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
@@ -129,22 +129,22 @@ export function TrackOrder() {
                 return (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Subtotal</span>
-                      <span className="text-white font-semibold">{formatCurrency(subtotal)}</span>
+                      <span className="text-content-muted">Subtotal</span>
+                      <span className="text-content font-semibold">{formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">
+                      <span className="text-content-muted">
                         {storeConfig.finance.taxLabel} ({taxPercent}%)
                       </span>
-                      <span className="text-white font-semibold">{formatCurrency(tax)}</span>
+                      <span className="text-content font-semibold">{formatCurrency(tax)}</span>
                     </div>
-                    <div className="flex justify-between text-sm pb-2 border-b border-amber-500/20">
-                      <span className="text-slate-400">Envío</span>
-                      <span className="text-white font-semibold">{formatCurrency(result.shipping_cost || 0)}</span>
+                    <div className="flex justify-between text-sm pb-2 border-b border-line">
+                      <span className="text-content-muted">Envío</span>
+                      <span className="text-content font-semibold">{formatCurrency(result.shipping_cost || 0)}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2">
-                      <span className="text-white font-bold text-lg">Total a Pagar</span>
-                      <span className="text-amber-400 font-bold text-2xl">{formatCurrency(total)}</span>
+                      <span className="text-content font-bold text-lg">Total a Pagar</span>
+                      <span className="text-accent font-bold text-2xl">{formatCurrency(total)}</span>
                     </div>
                   </>
                 );

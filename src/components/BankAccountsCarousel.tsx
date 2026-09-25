@@ -29,8 +29,8 @@ export function BankAccountsCarousel() {
 
   if (loading) {
     return (
-      <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
-        <p className="text-slate-400 text-center">Cargando cuentas bancarias...</p>
+      <div className="bg-bg-subtle border border-line rounded-lg p-6">
+        <p className="text-content-muted text-center">Cargando cuentas bancarias...</p>
       </div>
     );
   }
@@ -41,12 +41,12 @@ export function BankAccountsCarousel() {
 
   if (error) {
     return (
-      <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
-        <div className="flex items-center gap-2 text-amber-400 mb-2">
+      <div className="bg-bg-subtle border border-line rounded-lg p-6">
+        <div className="flex items-center gap-2 text-accent mb-2">
           <AlertCircle className="w-5 h-5" />
           <p className="font-semibold">Aviso</p>
         </div>
-        <p className="text-slate-300 text-sm">{error}</p>
+        <p className="text-content-soft text-sm">{error}</p>
       </div>
     );
   }
@@ -68,8 +68,8 @@ export function BankAccountsCarousel() {
   }
 
   return (
-    <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
-      <h3 className="text-white font-semibold text-lg mb-4">Datos para Transferir</h3>
+    <div className="bg-bg-subtle border border-line rounded-lg p-6">
+      <h3 className="text-content font-semibold text-lg mb-4">Datos para Transferir</h3>
 
       <div className="relative">
         {accounts.length > 1 && (
@@ -77,7 +77,7 @@ export function BankAccountsCarousel() {
             <button
               type="button"
               onClick={goToPrevious}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-colors z-10"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 bg-surface-hover hover:bg-surface-hover text-content p-2 rounded-lg transition-colors z-10"
               aria-label="Cuenta anterior"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -85,7 +85,7 @@ export function BankAccountsCarousel() {
             <button
               type="button"
               onClick={goToNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-colors z-10"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 bg-surface-hover hover:bg-surface-hover text-content p-2 rounded-lg transition-colors z-10"
               aria-label="Siguiente cuenta"
             >
               <ChevronRight className="w-5 h-5" />
@@ -93,11 +93,11 @@ export function BankAccountsCarousel() {
           </>
         )}
 
-        <div className="bg-gradient-to-br from-slate-800 to-slate-850 border border-amber-500/20 rounded-lg p-6 space-y-4">
+        <div className="bg-gradient-to-br bg-surface border border-line rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-amber-400 font-semibold">{currentAccount.label}</h4>
+            <h4 className="text-accent font-semibold">{currentAccount.label}</h4>
             {accounts.length > 1 && (
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-content-muted">
                 {currentIndex + 1} de {accounts.length}
               </span>
             )}
@@ -105,18 +105,18 @@ export function BankAccountsCarousel() {
 
           <div className="space-y-3">
             <div>
-              <p className="text-slate-400 text-sm mb-1">Banco</p>
-              <p className="text-white font-medium">{currentAccount.bank_name}</p>
+              <p className="text-content-muted text-sm mb-1">Banco</p>
+              <p className="text-content font-medium">{currentAccount.bank_name}</p>
             </div>
 
             <div>
-              <p className="text-slate-400 text-sm mb-1">Titular</p>
+              <p className="text-content-muted text-sm mb-1">Titular</p>
               <div className="flex items-center justify-between">
-                <p className="text-white font-medium">{currentAccount.account_holder}</p>
+                <p className="text-content font-medium">{currentAccount.account_holder}</p>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(currentAccount.account_holder, 'holder')}
-                  className="text-amber-400 hover:text-amber-300 transition-colors p-1"
+                  className="text-accent hover:text-accent-hover transition-colors p-1"
                   title="Copiar"
                 >
                   {copiedField === 'holder' ? (
@@ -129,13 +129,13 @@ export function BankAccountsCarousel() {
             </div>
 
             <div>
-              <p className="text-slate-400 text-sm mb-1">Cédula/RIF</p>
+              <p className="text-content-muted text-sm mb-1">Cédula/RIF</p>
               <div className="flex items-center justify-between">
-                <p className="text-white font-medium font-mono">{currentAccount.document_id}</p>
+                <p className="text-content font-medium font-mono">{currentAccount.document_id}</p>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(currentAccount.document_id, 'document')}
-                  className="text-amber-400 hover:text-amber-300 transition-colors p-1"
+                  className="text-accent hover:text-accent-hover transition-colors p-1"
                   title="Copiar"
                 >
                   {copiedField === 'document' ? (
@@ -148,15 +148,15 @@ export function BankAccountsCarousel() {
             </div>
 
             <div>
-              <p className="text-slate-400 text-sm mb-1">
+              <p className="text-content-muted text-sm mb-1">
                 {currentAccount.bank_name.toLowerCase().includes('pago') ? 'Número de Teléfono' : 'Número de Cuenta'}
               </p>
               <div className="flex items-center justify-between">
-                <p className="text-white font-medium font-mono text-lg">{currentAccount.account_number}</p>
+                <p className="text-content font-medium font-mono text-lg">{currentAccount.account_number}</p>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(currentAccount.account_number, 'account')}
-                  className="text-amber-400 hover:text-amber-300 transition-colors p-1"
+                  className="text-accent hover:text-accent-hover transition-colors p-1"
                   title="Copiar"
                 >
                   {copiedField === 'account' ? (
@@ -170,8 +170,8 @@ export function BankAccountsCarousel() {
 
             {currentAccount.account_type && (
               <div>
-                <p className="text-slate-400 text-sm mb-1">Tipo</p>
-                <p className="text-white font-medium capitalize">{currentAccount.account_type}</p>
+                <p className="text-content-muted text-sm mb-1">Tipo</p>
+                <p className="text-content font-medium capitalize">{currentAccount.account_type}</p>
               </div>
             )}
 
@@ -191,7 +191,7 @@ export function BankAccountsCarousel() {
                 type="button"
                 onClick={() => setCurrentIndex(index)}
                 className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentIndex ? 'bg-amber-400 w-6' : 'bg-slate-600'
+                  index === currentIndex ? 'bg-brand w-6' : 'bg-line'
                 }`}
                 aria-label={`Ir a cuenta ${index + 1}`}
               />
@@ -200,7 +200,7 @@ export function BankAccountsCarousel() {
         )}
       </div>
 
-      <p className="text-slate-400 text-xs mt-4 text-center">
+      <p className="text-content-muted text-xs mt-4 text-center">
         Haz clic en los iconos para copiar los datos al portapapeles
       </p>
     </div>

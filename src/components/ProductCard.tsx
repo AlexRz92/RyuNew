@@ -22,47 +22,52 @@ export function ProductCard({
   const stockCount = inventory?.quantity ?? 0;
 
   return (
-    <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-lg sm:rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 group flex flex-col h-full">
+    <div className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col h-full">
       <div
-        className="h-40 sm:h-56 lg:h-[280px] bg-slate-900 flex items-center justify-center overflow-hidden relative cursor-pointer flex-shrink-0"
+        className="h-40 sm:h-52 lg:h-60 bg-bg-subtle flex items-center justify-center overflow-hidden relative cursor-pointer flex-shrink-0"
         onClick={() => onProductClick?.(product)}
       >
         {product.image_url ? (
           <ImageWithSkeleton
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             priority={priority}
             preset="productCard"
           />
         ) : (
-          <Package className="w-12 h-12 sm:w-20 sm:h-20 text-slate-700" />
+          <Package className="w-12 h-12 sm:w-20 sm:h-20 text-content-muted" />
         )}
-        <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded z-10">
+        <div className="absolute top-2 left-2 z-10">
           {inStock ? (
-            <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">
+            <span className="text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/90 text-white backdrop-blur-sm">
               {stockCount} disponibles
             </span>
           ) : (
-            <span className="text-[10px] sm:text-xs text-red-400 font-medium">Sin stock</span>
+            <span className="text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full bg-red-500/90 text-white backdrop-blur-sm">
+              Sin stock
+            </span>
           )}
         </div>
       </div>
 
       <div className="p-3 sm:p-4 flex flex-col flex-1">
-        <h3 className="text-white font-semibold text-sm sm:text-base mb-1 sm:mb-2 line-clamp-2 flex-shrink-0">
+        <h3
+          className="text-content font-semibold text-sm sm:text-base mb-1 line-clamp-2 flex-shrink-0 cursor-pointer hover:text-brand transition-colors"
+          onClick={() => onProductClick?.(product)}
+        >
           {product.name}
         </h3>
-        <p className="text-slate-400 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 flex-1">
+        <p className="text-content-muted text-xs sm:text-sm mb-3 line-clamp-2 flex-1">
           {product.description}
         </p>
 
-        <div className="flex items-center justify-between mt-auto gap-2">
+        <div className="flex items-end justify-between mt-auto gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-amber-400 text-lg sm:text-xl lg:text-2xl font-bold">
+            <p className="text-content text-lg sm:text-2xl font-bold tracking-tight">
               {formatPrice(product.price)}
             </p>
-            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">
+            <p className="text-content-muted text-[10px] sm:text-xs mt-0.5 truncate">
               SKU: {product.sku}
             </p>
           </div>
@@ -73,10 +78,10 @@ export function ProductCard({
               onAddToCart(product);
             }}
             disabled={!inStock}
-            className={`flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-all text-sm ${
+            className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 rounded-full font-semibold transition-all text-sm ${
               inStock
-                ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-lg hover:shadow-orange-500/50'
-                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                ? 'bg-brand hover:bg-brand-hover text-brand-contrast shadow-sm'
+                : 'bg-bg-subtle text-content-muted cursor-not-allowed'
             }`}
           >
             <Plus className="w-4 h-4" />

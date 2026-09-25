@@ -286,13 +286,13 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
+        <main className="min-h-screen bg-bg-subtle py-8">
           <div className="container mx-auto px-4 max-w-2xl">
-            <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8">
-              <p className="text-slate-400 mb-6 text-lg">Tu carrito está vacío</p>
+            <div className="text-center bg-bg-elevated border border-line rounded-xl p-8">
+              <p className="text-content-muted mb-6 text-lg">Tu carrito está vacío</p>
               <button
                 onClick={() => navigate('/')}
-                className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-lg transition-colors w-full font-semibold"
+                className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-brand-contrast px-6 py-3 rounded-lg transition-colors w-full font-semibold"
               >
                 <Home className="w-5 h-5" />
                 Volver a la tienda
@@ -309,20 +309,20 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
+        <main className="min-h-screen bg-bg-subtle py-8">
           <div className="container mx-auto px-4 max-w-2xl">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-amber-500/30 rounded-xl p-8 text-center shadow-2xl">
+            <div className="bg-bg-elevated border border-line rounded-xl p-8 text-center shadow-2xl">
               <CheckCircle className="w-20 h-20 text-green-400 mx-auto mb-6" />
-              <h2 className="text-3xl font-bold text-white mb-4">¡Comprobante Recibido!</h2>
+              <h2 className="text-3xl font-bold text-content mb-4">¡Comprobante Recibido!</h2>
 
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6">
-                <p className="text-orange-400 font-semibold text-sm mb-2">¡IMPORTANTE!</p>
-                <p className="text-slate-300 text-sm">Guarda este código para rastrear tu pedido</p>
+              <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6">
+                <p className="text-accent font-semibold text-sm mb-2">¡IMPORTANTE!</p>
+                <p className="text-content-soft text-sm">Guarda este código para rastrear tu pedido</p>
               </div>
 
-              <p className="text-slate-300 mb-3 font-semibold">Tu código de seguimiento:</p>
-              <div className="bg-slate-900 border-2 border-amber-500/40 rounded-lg p-5 mb-4">
-                <p className="text-amber-400 text-3xl font-bold tracking-wider">{trackingCode}</p>
+              <p className="text-content-soft mb-3 font-semibold">Tu código de seguimiento:</p>
+              <div className="bg-bg-subtle border-2 border-brand/40 rounded-lg p-5 mb-4">
+                <p className="text-accent text-3xl font-bold tracking-wider">{trackingCode}</p>
               </div>
 
               {redirecting ? (
@@ -331,19 +331,19 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <Check className="w-5 h-5 text-green-400" />
                     <p className="text-green-400 font-semibold">Código copiado</p>
                   </div>
-                  <p className="text-slate-300 text-sm mt-2">Redirigiendo a la tienda...</p>
+                  <p className="text-content-soft text-sm mt-2">Redirigiendo a la tienda...</p>
                 </div>
               ) : (
                 <>
                   <button
                     onClick={handleCopyTracking}
                     disabled={copiedTracking}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg transition-colors w-full mb-4 disabled:opacity-70"
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-content font-bold px-6 py-3 rounded-lg transition-colors w-full mb-4 disabled:opacity-70"
                   >
                     {copiedTracking ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                     {copiedTracking ? 'Copiando...' : 'Copiar código de seguimiento'}
                   </button>
-                  <p className="text-slate-400 text-sm mb-6">
+                  <p className="text-content-muted text-sm mb-6">
                     Copia el código y serás redirigido automáticamente a la tienda
                   </p>
                 </>
@@ -352,7 +352,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
               {!redirecting && (
                 <button
                   onClick={handleBackToStore}
-                  className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all w-full"
+                  className="flex items-center justify-center gap-2 bg-surface-hover hover:bg-surface-hover text-content font-bold py-4 rounded-lg transition-all w-full"
                 >
                   <Home className="w-5 h-5" />
                   Volver a la tienda sin copiar
@@ -370,37 +370,37 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
+        <main className="min-h-screen bg-bg-subtle py-8">
           <div className="container mx-auto px-4 max-w-2xl">
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 shadow-2xl">
+            <div className="bg-bg-elevated border border-line rounded-xl p-8 shadow-2xl">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2">¡Pedido Creado!</h2>
-                <p className="text-slate-300">
+                <h2 className="text-3xl font-bold text-content mb-2">¡Pedido Creado!</h2>
+                <p className="text-content-soft">
                   Ahora necesitamos que subas el comprobante de transferencia
                 </p>
               </div>
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
                 <p className="text-blue-400 font-semibold text-sm mb-2">Próximo paso</p>
-                <p className="text-slate-300 text-sm">
+                <p className="text-content-soft text-sm">
                   Sube el comprobante de tu transferencia bancaria para completar tu pedido. Una vez
                   lo valides, recibirás tu número de seguimiento.
                 </p>
               </div>
 
               <form onSubmit={handleUploadProof} className="space-y-6">
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-                  <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
-                  <p className="text-slate-300 text-sm">
+                <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+                  <p className="text-accent font-semibold mb-1">¡Importante!</p>
+                  <p className="text-content-soft text-sm">
                     Debes subir una captura del comprobante de transferencia
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm mb-2 font-semibold">
+                  <label className="block text-content-soft text-sm mb-2 font-semibold">
                     Captura de Pantalla del Comprobante *
                   </label>
-                  <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
+                  <div className="bg-surface border-2 border-dashed border-line rounded-lg p-6 text-center">
                     <input
                       type="file"
                       id="proof-upload"
@@ -416,9 +416,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                           className="max-h-48 mx-auto rounded-lg mb-3"
                         />
                       ) : (
-                        <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                        <Upload className="w-12 h-12 text-content-muted mx-auto mb-3" />
                       )}
-                      <p className="text-slate-400 text-sm">
+                      <p className="text-content-muted text-sm">
                         {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen (JPG, PNG o WEBP)'}
                       </p>
                     </label>
@@ -436,7 +436,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     type="button"
                     onClick={handleCancelOrderAndBack}
                     disabled={uploadingProof || cancellingOrder}
-                    className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-2 bg-surface-hover hover:bg-surface-hover text-content font-bold py-4 rounded-lg transition-all flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {cancellingOrder ? (
                       <>
@@ -453,7 +453,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                   <button
                     type="submit"
                     disabled={uploadingProof || !proofFile || cancellingOrder}
-                    className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                    className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-brand-contrast font-bold py-4 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                   >
                     {uploadingProof ? (
                       <>
@@ -477,12 +477,12 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
+      <main className="min-h-screen bg-bg-subtle py-8">
         <div className="container mx-auto px-4 max-w-6xl pb-12">
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-surface-hover hover:bg-surface-hover text-content px-4 py-2 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               Volver al carrito
@@ -491,15 +491,15 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
           <div className="grid lg:grid-cols-[1fr_400px] gap-8">
             <form onSubmit={handleSubmitOrder} className="space-y-6 order-2 lg:order-1">
-              <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
+              <div className="bg-surface border border-line rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-white font-semibold text-lg">Datos de Facturación y Envío</h3>
-                  {hasPrefilledData && <p className="text-xs text-slate-400">Datos desde tu perfil</p>}
+                  <h3 className="text-content font-semibold text-lg">Datos de Facturación y Envío</h3>
+                  {hasPrefilledData && <p className="text-xs text-content-muted">Datos desde tu perfil</p>}
                 </div>
 
                 {hasPrefilledData && (
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex justify-between items-center mb-4">
-                    <p className="text-slate-300 text-sm">
+                    <p className="text-content-soft text-sm">
                       Para modificar tus datos, ve a{' '}
                       <span className="text-blue-400 font-semibold">Mi Perfil</span>
                     </p>
@@ -628,7 +628,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                 <p className="text-blue-400 font-semibold text-sm mb-2">Próximo paso</p>
-                <p className="text-slate-300 text-sm">
+                <p className="text-content-soft text-sm">
                   Después de confirmar tu pedido, podrás subir el comprobante de tu transferencia
                   bancaria.
                 </p>
@@ -644,7 +644,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-lg transition-all flex-1"
+                  className="flex items-center justify-center gap-2 bg-surface-hover hover:bg-surface-hover text-content font-bold py-4 rounded-lg transition-all flex-1"
                 >
                   <ArrowLeft className="w-5 h-5" />
                   Volver a la tienda
@@ -652,7 +652,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                  className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-brand-contrast font-bold py-4 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                 >
                   {loading ? (
                     <>
@@ -668,65 +668,65 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
             <div className="order-1 lg:order-2">
               <div className="lg:sticky lg:top-8">
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-6 shadow-xl">
-                  <h3 className="text-amber-400 font-semibold mb-4 text-lg">Resumen del Pedido</h3>
+                <div className="bg-bg-elevated border border-line rounded-xl p-6 shadow-xl">
+                  <h3 className="text-accent font-semibold mb-4 text-lg">Resumen del Pedido</h3>
 
                   <div className="space-y-3 mb-4 max-h-[300px] overflow-y-auto">
                     {items.map((item) => (
                       <div
                         key={item.product.id}
-                        className="flex justify-between text-sm pb-3 border-b border-slate-700"
+                        className="flex justify-between text-sm pb-3 border-b border-line"
                       >
                         <div className="flex-1 pr-2">
-                          <p className="text-white font-medium">{item.product.name}</p>
-                          <p className="text-slate-400 text-xs mt-1">Cantidad: {item.quantity}</p>
+                          <p className="text-content font-medium">{item.product.name}</p>
+                          <p className="text-content-muted text-xs mt-1">Cantidad: {item.quantity}</p>
                         </div>
-                        <span className="text-amber-400 font-semibold whitespace-nowrap">
+                        <span className="text-accent font-semibold whitespace-nowrap">
                           {formatCurrency(item.product.price * item.quantity)}
                         </span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="space-y-3 pt-4 border-t border-amber-500/30">
+                  <div className="space-y-3 pt-4 border-t border-line">
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-300">Subtotal</span>
-                      <span className="text-white font-semibold">{formatCurrency(subtotal)}</span>
+                      <span className="text-content-soft">Subtotal</span>
+                      <span className="text-content font-semibold">{formatCurrency(subtotal)}</span>
                     </div>
 
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-300">
+                      <span className="text-content-soft">
                         {storeConfig.finance.taxLabel} ({taxPercent}%)
                       </span>
-                      <span className="text-white font-semibold">{formatCurrency(tax)}</span>
+                      <span className="text-content font-semibold">{formatCurrency(tax)}</span>
                     </div>
 
                     {shippingInfo && (
                       <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-amber-400" />
-                          <span className="text-slate-300">Envío</span>
+                          <Truck className="w-4 h-4 text-accent" />
+                          <span className="text-content-soft">Envío</span>
                         </div>
                         <div className="text-right">
                           {shippingInfo.isFree ? (
                             <span className="text-green-400 font-semibold">Gratis</span>
                           ) : shippingInfo.cost > 0 ? (
                             <div>
-                              <div className="text-white font-semibold">
+                              <div className="text-content font-semibold">
                                 {formatCurrency(shippingInfo.cost)}
                               </div>
-                              <div className="text-xs text-slate-400">puede variar</div>
+                              <div className="text-xs text-content-muted">puede variar</div>
                             </div>
                           ) : (
-                            <span className="text-slate-400">Por confirmar</span>
+                            <span className="text-content-muted">Por confirmar</span>
                           )}
                         </div>
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center pt-4 border-t border-amber-500/30">
-                      <span className="text-white font-bold text-lg">Total a Pagar</span>
-                      <span className="text-amber-400 font-bold text-2xl">{formatCurrency(total)}</span>
+                    <div className="flex justify-between items-center pt-4 border-t border-line">
+                      <span className="text-content font-bold text-lg">Total a Pagar</span>
+                      <span className="text-accent font-bold text-2xl">{formatCurrency(total)}</span>
                     </div>
                   </div>
                 </div>
@@ -742,14 +742,14 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <label className="block text-slate-300 text-sm mb-2">{label}</label>
+      <label className="block text-content-soft text-sm mb-2">{label}</label>
       {children}
     </div>
   );
 }
 
 function inputClass(disabled: boolean): string {
-  return `w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${
+  return `w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none ${
     disabled ? 'opacity-60 cursor-not-allowed' : ''
   }`;
 }

@@ -39,7 +39,7 @@ export function Dashboard() {
 
   const cards = [
     { label: 'Productos', value: stats.products, icon: Package, color: 'text-blue-400' },
-    { label: 'Pedidos totales', value: stats.orders, icon: ShoppingCart, color: 'text-amber-400' },
+    { label: 'Pedidos totales', value: stats.orders, icon: ShoppingCart, color: 'text-accent' },
     { label: 'Pedidos pendientes', value: stats.pending, icon: Clock, color: 'text-yellow-400' },
     { label: 'Ingresos (conf./compl.)', value: formatCurrency(stats.revenue), icon: DollarSign, color: 'text-green-400' },
   ];
@@ -49,7 +49,7 @@ export function Dashboard() {
       <PageHeader title="Dashboard" description="Resumen general de la tienda" />
 
       {loading ? (
-        <p className="text-slate-400">Cargando...</p>
+        <p className="text-content-muted">Cargando...</p>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
@@ -57,8 +57,8 @@ export function Dashboard() {
               <Card key={card.label} className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-400 text-sm">{card.label}</p>
-                    <p className="text-2xl font-bold text-white mt-1">{card.value}</p>
+                    <p className="text-content-muted text-sm">{card.label}</p>
+                    <p className="text-2xl font-bold text-content mt-1">{card.value}</p>
                   </div>
                   <card.icon className={`w-8 h-8 ${card.color}`} />
                 </div>
@@ -76,7 +76,7 @@ export function Dashboard() {
           )}
 
           <Card className="p-5">
-            <h2 className="text-white font-semibold mb-4">Pedidos recientes</h2>
+            <h2 className="text-content font-semibold mb-4">Pedidos recientes</h2>
             {recentOrders.length === 0 ? (
               <EmptyState message="Aún no hay pedidos" />
             ) : (
@@ -84,11 +84,11 @@ export function Dashboard() {
                 {recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between bg-slate-950 rounded-lg p-3 text-sm"
+                    className="flex items-center justify-between bg-bg-subtle rounded-lg p-3 text-sm"
                   >
-                    <span className="text-white font-medium">{order.tracking_code}</span>
-                    <span className="text-slate-400">{order.customer_name}</span>
-                    <span className="text-amber-400 font-semibold">
+                    <span className="text-content font-medium">{order.tracking_code}</span>
+                    <span className="text-content-muted">{order.customer_name}</span>
+                    <span className="text-accent font-semibold">
                       {formatCurrency(order.total_amount)}
                     </span>
                   </div>

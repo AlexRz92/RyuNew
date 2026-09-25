@@ -203,8 +203,8 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
-        <p className="text-slate-400">Cargando perfil...</p>
+      <div className="min-h-screen bg-bg-subtle flex items-center justify-center">
+        <p className="text-content-muted">Cargando perfil...</p>
       </div>
     );
   }
@@ -213,12 +213,12 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
     return (
       <>
         <Header onLoginClick={() => setIsLoginOpen(true)} />
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
-          <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 max-w-md mx-4">
-            <p className="text-slate-400 mb-6">Inicia sesión para ver tu perfil y tus compras</p>
+        <div className="min-h-screen bg-bg-subtle flex items-center justify-center">
+          <div className="text-center bg-bg-elevated border border-line rounded-xl p-8 max-w-md mx-4">
+            <p className="text-content-muted mb-6">Inicia sesión para ver tu perfil y tus compras</p>
             <button
               onClick={() => setIsLoginOpen(true)}
-              className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-lg transition-colors w-full font-semibold"
+              className="bg-brand hover:bg-brand-hover text-brand-contrast px-6 py-3 rounded-lg transition-colors w-full font-semibold"
             >
               Iniciar sesión
             </button>
@@ -233,12 +233,12 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
-          <div className="text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 max-w-md mx-4">
-            <p className="text-slate-400 mb-6">No se encontró el perfil</p>
+        <div className="min-h-screen bg-bg-subtle flex items-center justify-center">
+          <div className="text-center bg-bg-elevated border border-line rounded-xl p-8 max-w-md mx-4">
+            <p className="text-content-muted mb-6">No se encontró el perfil</p>
             <button
               onClick={handleLogout}
-              className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors w-full"
+              className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-content px-6 py-3 rounded-lg transition-colors w-full"
             >
               <LogOut className="w-5 h-5" />
               Cerrar sesión
@@ -252,21 +252,21 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+      <div className="min-h-screen bg-bg-subtle">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-            <h1 className="text-3xl font-bold text-white">Mi Perfil</h1>
+            <h1 className="text-3xl font-bold text-content">Mi Perfil</h1>
             <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 bg-surface-hover hover:bg-surface-hover text-content px-4 py-2 rounded-lg transition-colors"
               >
                 <ShoppingBag className="w-5 h-5" />
                 Ir a la tienda
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-content px-4 py-2 rounded-lg transition-colors"
               >
                 <LogOut className="w-5 h-5" />
                 Cerrar sesión
@@ -281,13 +281,13 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
           )}
 
           {/* Datos personales */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-6 mb-8">
+          <div className="bg-bg-elevated border border-line rounded-xl p-6 mb-8">
             <div className="flex justify-between items-start mb-6">
-              <h2 className="text-2xl font-bold text-white">Datos Personales</h2>
+              <h2 className="text-2xl font-bold text-content">Datos Personales</h2>
               {!editing && (
                 <button
                   onClick={() => setEditing(true)}
-                  className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="bg-brand hover:bg-brand-hover text-brand-contrast px-4 py-2 rounded-lg transition-colors"
                 >
                   Editar
                 </button>
@@ -329,7 +329,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                   <button
                     onClick={handleSaveProfile}
                     disabled={saving}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    className="bg-green-600 hover:bg-green-700 text-content px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {saving ? 'Guardando...' : 'Guardar'}
                   </button>
@@ -338,7 +338,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                       setEditing(false);
                       setEditData(profile);
                     }}
-                    className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-colors"
+                    className="bg-surface-hover hover:bg-surface-hover text-content px-6 py-2 rounded-lg transition-colors"
                   >
                     Cancelar
                   </button>
@@ -355,20 +355,20 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
           </div>
 
           {/* Compras */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+          <div className="bg-bg-elevated border border-line rounded-xl p-6">
+            <h2 className="text-2xl font-bold text-content mb-6 flex items-center gap-2">
               <ShoppingBag className="w-6 h-6" />
               Mis Compras
             </h2>
 
             {orders.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No tienes compras registradas</p>
+              <p className="text-content-muted text-center py-8">No tienes compras registradas</p>
             ) : (
               <div className="space-y-4">
                 {orders.map((order) => (
-                  <div key={order.id} className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                  <div key={order.id} className="bg-bg-subtle border border-line rounded-lg overflow-hidden">
                     <div className="p-4">
-                      <p className="text-white font-semibold">Código: {order.tracking_code}</p>
+                      <p className="text-content font-semibold">Código: {order.tracking_code}</p>
                       <div className="grid grid-cols-3 gap-4 mt-2 text-sm">
                         <InfoField label="Estado" value={order.status} capitalize />
                         <InfoField label="Total" value={formatCurrency(order.total_amount)} />
@@ -376,14 +376,14 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                       </div>
                       <button
                         onClick={() => toggleOrderDetails(order.id)}
-                        className="mt-4 text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded transition-colors"
+                        className="mt-4 text-sm bg-surface-hover hover:bg-surface-hover text-content px-4 py-2 rounded transition-colors"
                       >
                         {expandedOrderId === order.id ? 'Ocultar detalles' : 'Ver detalles'}
                       </button>
                     </div>
 
                     {expandedOrderId === order.id && order.items && (
-                      <div className="bg-slate-800/50 border-t border-slate-700 p-4">
+                      <div className="bg-surface border-t border-line p-4">
                         <div className="space-y-3 mb-4">
                           {order.items.map((item) => {
                             const itemSubtotal =
@@ -391,7 +391,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                             return (
                               <div
                                 key={item.id}
-                                className="flex justify-between text-sm text-slate-300 bg-slate-900 p-3 rounded"
+                                className="flex justify-between text-sm text-content-soft bg-bg-subtle p-3 rounded"
                               >
                                 <span>
                                   {item.product_name || 'Producto'} (x{item.quantity})
@@ -402,7 +402,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                           })}
                         </div>
 
-                        <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 mb-4">
+                        <div className="bg-bg-subtle border border-line rounded-lg p-4 mb-4">
                           {(() => {
                             const { subtotal, tax, shipping, total } = orderSummary(order);
                             return (
@@ -410,7 +410,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                                 <SummaryRow label="Subtotal" value={formatCurrency(subtotal)} />
                                 <SummaryRow label={`${storeConfig.finance.taxLabel} (${taxPercent}%)`} value={formatCurrency(tax)} />
                                 <SummaryRow label="Envío" value={formatCurrency(shipping)} />
-                                <div className="flex justify-between text-white font-semibold border-t border-slate-600 pt-2 mt-2">
+                                <div className="flex justify-between text-content font-semibold border-t border-line pt-2 mt-2">
                                   <span>Total:</span>
                                   <span>{formatCurrency(total)}</span>
                                 </div>
@@ -419,17 +419,17 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                           })()}
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3 border-t border-slate-700 pt-3">
+                        <div className="flex flex-col sm:flex-row gap-3 border-t border-line pt-3">
                           <button
                             onClick={() => handleReorder(order)}
-                            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
+                            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-content px-4 py-2 rounded transition-colors"
                           >
                             <RefreshCw className="w-5 h-5" />
                             Recomprar
                           </button>
                           <button
                             onClick={() => handleCopyTracking(order.tracking_code)}
-                            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-content px-4 py-2 rounded transition-colors"
                           >
                             {copiedTrackingCode === order.tracking_code ? (
                               <>
@@ -445,7 +445,7 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
                           </button>
                           <button
                             onClick={() => handleDownloadInvoice(order)}
-                            className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition-colors"
+                            className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-brand-contrast px-4 py-2 rounded transition-colors"
                           >
                             <Download className="w-5 h-5" />
                             Descargar factura (PDF)
@@ -487,12 +487,12 @@ function LabeledInput({
 }) {
   return (
     <div>
-      <label className="block text-slate-300 text-sm mb-2">{label}</label>
+      <label className="block text-content-soft text-sm mb-2">{label}</label>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none"
+        className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content focus:border-brand focus:outline-none"
       />
     </div>
   );
@@ -501,15 +501,15 @@ function LabeledInput({
 function InfoField({ label, value, capitalize }: { label: string; value: string; capitalize?: boolean }) {
   return (
     <div>
-      <p className="text-slate-500 text-sm mb-1">{label}</p>
-      <p className={`text-white ${capitalize ? 'capitalize' : ''}`}>{value}</p>
+      <p className="text-content-muted text-sm mb-1">{label}</p>
+      <p className={`text-content ${capitalize ? 'capitalize' : ''}`}>{value}</p>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-slate-300">
+    <div className="flex justify-between text-content-soft">
       <span>{label}:</span>
       <span>{value}</span>
     </div>

@@ -3,22 +3,91 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
+  /* ===================================================================
+     PALETA SEMÁNTICA — MODO CLARO (por defecto)
+     Estética premium tipo marketplace: fondos claros, alto contraste,
+     acento índigo. Los valores son "R G B" (sin coma) para usar con
+     rgb(var(--x) / <alpha>) en Tailwind.
+     =================================================================== */
+  :root {
+    --bg: 255 255 255; /* blanco */
+    --bg-subtle: 244 245 247; /* gris muy claro (fondo de página) */
+    --bg-elevated: 255 255 255;
+
+    --surface: 255 255 255; /* tarjetas */
+    --surface-hover: 248 249 251;
+
+    --content: 17 24 39; /* texto principal (casi negro) */
+    --content-soft: 55 65 81; /* texto secundario */
+    --content-muted: 107 114 128; /* texto tenue */
+
+    --line: 226 232 240; /* bordes/divisores */
+
+    --brand: 37 99 235; /* azul índigo (acento principal) */
+    --brand-hover: 29 78 216;
+    --brand-soft: 219 234 254; /* fondo suave de marca */
+    --brand-contrast: 255 255 255; /* texto sobre brand */
+
+    --accent: 217 119 6; /* ámbar/dorado (precios, destacados) */
+    --accent-hover: 180 83 9;
+    --accent-contrast: 255 255 255;
+
+    color-scheme: light;
+  }
+
+  /* ===================================================================
+     MODO OSCURO — grafito profundo (no negro puro), texto suave.
+     =================================================================== */
+  .dark {
+    --bg: 15 18 24; /* grafito */
+    --bg-subtle: 11 14 19;
+    --bg-elevated: 22 27 34;
+
+    --surface: 24 30 39;
+    --surface-hover: 31 39 51;
+
+    --content: 237 240 244;
+    --content-soft: 191 199 210;
+    --content-muted: 138 147 161;
+
+    --line: 42 50 63;
+
+    --brand: 96 165 250; /* azul más luminoso para contraste en oscuro */
+    --brand-hover: 129 185 255;
+    --brand-soft: 30 58 95;
+    --brand-contrast: 12 17 26;
+
+    --accent: 245 189 74; /* dorado luminoso */
+    --accent-hover: 250 204 106;
+    --accent-contrast: 20 16 8;
+
+    color-scheme: dark;
+  }
+
+  html,
+  body {
     overflow-x: hidden;
     width: 100%;
     position: relative;
-    /* Fondo sólido oscuro de respaldo: evita franjas blancas cuando el
-       navegador no alcanza a repintar el gradiente durante scroll rápido. */
-    background-color: #020617; /* slate-950 */
+    background-color: rgb(var(--bg-subtle));
+    color: rgb(var(--content));
   }
 
   #root {
-    background-color: #020617; /* slate-950 */
+    background-color: rgb(var(--bg-subtle));
     min-height: 100vh;
   }
 
   * {
     box-sizing: border-box;
+  }
+
+  /* Transición suave al alternar tema. */
+  body,
+  body * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
   }
 }
 

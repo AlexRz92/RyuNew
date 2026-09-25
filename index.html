@@ -20,6 +20,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Aplica el tema guardado (o el del sistema) antes de que React monte,
+      // para evitar el parpadeo de color al cargar la página.
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var dark =
+            saved === 'dark' ||
+            (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

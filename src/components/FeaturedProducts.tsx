@@ -20,18 +20,16 @@ export function FeaturedProducts({
 }: FeaturedProductsProps) {
   const [scrollPosition, setScrollPosition] = useState(0);
   const cardWidth = 280;
-  const gap = 24;
+  const gap = 20;
 
   if (products.length === 0) return null;
 
   const scroll = (direction: 'left' | 'right') => {
     const container = document.getElementById('featured-scroll');
     if (!container) return;
-
     const scrollAmount = direction === 'left' ? -(cardWidth + gap) : cardWidth + gap;
     const newPosition = scrollPosition + scrollAmount;
     const maxScroll = container.scrollWidth - container.clientWidth;
-
     const clampedPosition = Math.max(0, Math.min(newPosition, maxScroll));
     setScrollPosition(clampedPosition);
     container.scrollTo({ left: clampedPosition, behavior: 'smooth' });
@@ -41,109 +39,105 @@ export function FeaturedProducts({
   const canScrollRight = scrollPosition < products.length * (cardWidth + gap) - 1000;
 
   return (
-    <div className="mb-12 overflow-hidden">
-      <div className="flex items-center justify-center mb-6">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-        <h2 className="text-xl sm:text-2xl font-bold text-white px-4 sm:px-6 whitespace-nowrap">
+    <div className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-content tracking-tight">
           {storeConfig.content.featuredTitle}
         </h2>
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-      </div>
-
-      <div className="relative group">
-        {canScrollLeft && (
+        <div className="hidden lg:flex gap-2">
           <button
             onClick={() => scroll('left')}
-            className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-900/90 hover:bg-slate-800 text-white p-3 rounded-full shadow-xl border border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
+            disabled={!canScrollLeft}
+            className="w-9 h-9 rounded-full border border-line bg-surface text-content-soft hover:bg-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             aria-label="Anterior"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
-        )}
-
-        {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-900/90 hover:bg-slate-800 text-white p-3 rounded-full shadow-xl border border-amber-500/20 transition-all opacity-0 group-hover:opacity-100"
+            disabled={!canScrollRight}
+            className="w-9 h-9 rounded-full border border-line bg-surface text-content-soft hover:bg-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             aria-label="Siguiente"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
-        )}
+        </div>
+      </div>
 
-        <div
-          id="featured-scroll"
-          className="flex gap-3 sm:gap-6 overflow-x-auto scroll-smooth pb-4 scrollbar-hide"
-        >
-          {products.map((product, index) => {
-            const productInventory = inventory.find((inv) => inv.product_id === product.id);
-            const inStock = productInventory !== undefined && productInventory.quantity > 0;
-            const stockCount = productInventory?.quantity ?? 0;
+      <div
+        id="featured-scroll"
+        className="flex gap-4 sm:gap-5 overflow-x-auto scroll-smooth pb-2 scrollbar-hide"
+      >
+        {products.map((product, index) => {
+          const productInventory = inventory.find((inv) => inv.product_id === product.id);
+          const inStock = productInventory !== undefined && productInventory.quantity > 0;
+          const stockCount = productInventory?.quantity ?? 0;
 
-            return (
-              <div
-                key={product.id}
-                onClick={() => onProductClick(product)}
-                className="flex-shrink-0 w-[160px] sm:w-[240px] lg:w-[280px] bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-lg sm:rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 cursor-pointer group/card"
-              >
-                <div className="h-40 sm:h-56 lg:h-[280px] bg-slate-900 flex items-center justify-center overflow-hidden relative">
-                  {product.image_url ? (
-                    <ImageWithSkeleton
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
-                      priority={index < 3}
-                      preset="featuredProduct"
-                    />
+          return (
+            <div
+              key={product.id}
+              onClick={() => onProductClick(product)}
+              className="group flex-shrink-0 w-[160px] sm:w-[240px] lg:w-[280px] bg-surface border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer"
+            >
+              <div className="h-40 sm:h-52 lg:h-60 bg-bg-subtle flex items-center justify-center overflow-hidden relative">
+                {product.image_url ? (
+                  <ImageWithSkeleton
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    priority={index < 3}
+                    preset="featuredProduct"
+                  />
+                ) : (
+                  <Package className="w-12 h-12 sm:w-20 sm:h-20 text-content-muted" />
+                )}
+                <div className="absolute top-2 left-2 z-10">
+                  {inStock ? (
+                    <span className="text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/90 text-white backdrop-blur-sm">
+                      {stockCount} disponibles
+                    </span>
                   ) : (
-                    <Package className="w-12 h-12 sm:w-20 sm:h-20 text-slate-700" />
+                    <span className="text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full bg-red-500/90 text-white backdrop-blur-sm">
+                      Sin stock
+                    </span>
                   )}
-                  <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded z-10">
-                    {inStock ? (
-                      <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">
-                        {stockCount} disponibles
-                      </span>
-                    ) : (
-                      <span className="text-[10px] sm:text-xs text-red-400 font-medium">Sin stock</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-3 sm:p-4 flex flex-col">
-                  <h3 className="text-white font-semibold text-sm sm:text-base mb-1 sm:mb-2 line-clamp-2 flex-shrink-0">
-                    {product.name}
-                  </h3>
-                  <p className="text-slate-400 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 flex-1">
-                    {product.description}
-                  </p>
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto gap-2">
-                    <p className="text-amber-400 text-lg sm:text-xl lg:text-2xl font-bold">
-                      {formatPrice(product.price)}
-                    </p>
-                    {onAddToCart && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (inStock) onAddToCart(product);
-                        }}
-                        disabled={!inStock}
-                        className={`font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-all shadow-lg text-xs sm:text-sm w-full sm:w-auto flex items-center justify-center ${
-                          inStock
-                            ? 'bg-orange-600 hover:bg-orange-500 text-white hover:shadow-orange-500/50'
-                            : 'bg-slate-700 text-slate-500 cursor-not-allowed shadow-none'
-                        }`}
-                      >
-                        Agregar
-                      </button>
-                    )}
-                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+
+              <div className="p-3 sm:p-4 flex flex-col">
+                <h3 className="text-content font-semibold text-sm sm:text-base mb-1 line-clamp-2 flex-shrink-0">
+                  {product.name}
+                </h3>
+                <p className="text-content-muted text-xs sm:text-sm mb-3 line-clamp-2 flex-1">
+                  {product.description}
+                </p>
+
+                <div className="flex items-center justify-between mt-auto gap-2">
+                  <p className="text-content text-lg sm:text-2xl font-bold tracking-tight">
+                    {formatPrice(product.price)}
+                  </p>
+                  {onAddToCart && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (inStock) onAddToCart(product);
+                      }}
+                      disabled={!inStock}
+                      className={`font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all text-xs sm:text-sm flex items-center justify-center ${
+                        inStock
+                          ? 'bg-brand hover:bg-brand-hover text-brand-contrast'
+                          : 'bg-bg-subtle text-content-muted cursor-not-allowed'
+                      }`}
+                    >
+                      Agregar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

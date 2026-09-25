@@ -88,13 +88,15 @@ export interface StoreConfig {
 }
 
 export const storeConfig: StoreConfig = {
-  name: env('VITE_STORE_NAME', 'Ferretería RYU'),
-  tagline: env('VITE_STORE_TAGLINE', 'Todo para tu hogar'),
-  description: env('VITE_STORE_DESCRIPTION', 'Todo para tu hogar'),
+  name: env('VITE_STORE_NAME', 'Nova Store'),
+  tagline: env('VITE_STORE_TAGLINE', 'Tu tienda en línea'),
+  description: env('VITE_STORE_DESCRIPTION', 'Compra fácil, rápido y seguro'),
 
   branding: {
-    logo: env('VITE_STORE_LOGO', '/ryu.png'),
-    logoText: env('VITE_STORE_LOGO_TEXT', '/ferreteria.png'),
+    // Deja logo vacío para mostrar el nombre como texto (marca genérica).
+    // Define VITE_STORE_LOGO con la ruta de tu imagen para usar un logo.
+    logo: env('VITE_STORE_LOGO', ''),
+    logoText: env('VITE_STORE_LOGO_TEXT', ''),
     favicon: env('VITE_STORE_FAVICON', '/ryu.png'),
     ogImage: env('VITE_STORE_OG_IMAGE', '/og.png'),
   },
