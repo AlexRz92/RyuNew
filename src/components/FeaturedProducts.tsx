@@ -19,8 +19,8 @@ export function FeaturedProducts({
   onAddToCart,
 }: FeaturedProductsProps) {
   const [scrollPosition, setScrollPosition] = useState(0);
-  const cardWidth = 280;
-  const gap = 20;
+  const cardWidth = 210;
+  const gap = 16;
 
   if (products.length === 0) return null;
 
@@ -77,9 +77,9 @@ export function FeaturedProducts({
             <div
               key={product.id}
               onClick={() => onProductClick(product)}
-              className="group flex-shrink-0 w-[160px] sm:w-[240px] lg:w-[280px] bg-surface border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer"
+              className="group flex-shrink-0 w-[150px] sm:w-[190px] lg:w-[210px] bg-surface border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer"
             >
-              <div className="h-40 sm:h-52 lg:h-60 bg-bg-subtle flex items-center justify-center overflow-hidden relative">
+              <div className="aspect-square bg-bg-subtle flex items-center justify-center overflow-hidden relative">
                 {product.image_url ? (
                   <ImageWithSkeleton
                     src={product.image_url}

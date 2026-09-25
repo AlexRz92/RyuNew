@@ -12,10 +12,19 @@ interface CartProps {
   items: CartItem[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
+  onClearCart: () => void;
   onCheckout: () => void;
 }
 
-export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout }: CartProps) {
+export function Cart({
+  isOpen,
+  onClose,
+  items,
+  onUpdateQuantity,
+  onRemoveItem,
+  onClearCart,
+  onCheckout,
+}: CartProps) {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const { tax, total } = calculateTotals(subtotal);
   const taxPercent = Math.round(storeConfig.finance.taxRate * 100);
@@ -32,13 +41,28 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
             <ShoppingBag className="w-5 h-5 text-brand" />
             Carrito
           </h2>
-          <button
-            onClick={onClose}
-            className="text-content-muted hover:text-content transition-colors p-2 hover:bg-surface-hover rounded-full"
-            aria-label="Cerrar carrito"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-1">
+            {items.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm('¿Vaciar el carrito? Se quitarán todos los productos.')) {
+                    onClearCart();
+                  }
+                }}
+                className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors px-3 py-1.5 rounded-full"
+              >
+                <Trash2 className="w-4 h-4" />
+                Vaciar
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-content-muted hover:text-content transition-colors p-2 hover:bg-surface-hover rounded-full"
+              aria-label="Cerrar carrito"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
