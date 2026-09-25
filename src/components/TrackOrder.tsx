@@ -1,51 +1,26 @@
 import { useState } from 'react';
 import { Search, Package, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { trackOrder, type TrackedOrder } from '../services/orders';
+import { calculateTotals, formatCurrency, formatDate } from '../lib/format';
+import { storeConfig } from '../config/store.config';
+import type { OrderStatus } from '../lib/types';
 
-interface OrderTracking {
-  tracking_code: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  created_at: string;
-  total_amount: number;
-  shipping_cost?: number;
-  items: Array<{
-    name: string;
-    quantity: number;
-    price: number;
-  }>;
-}
-
-const statusConfig = {
-  pending: {
-    label: 'Pendiente',
-    icon: Clock,
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-400/10',
-  },
-  confirmed: {
-    label: 'Confirmado',
-    icon: CheckCircle,
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/10',
-  },
-  completed: {
-    label: 'Completado',
-    icon: CheckCircle,
-    color: 'text-green-400',
-    bg: 'bg-green-400/10',
-  },
-  cancelled: {
-    label: 'Cancelado',
-    icon: XCircle,
-    color: 'text-red-400',
-    bg: 'bg-red-400/10',
-  },
+const statusConfig: Record<
+  OrderStatus,
+  { label: string; icon: typeof Clock; color: string; bg: string }
+> = {
+  pending: { label: 'Pendiente', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+  confirmed: { label: 'Confirmado', icon: CheckCircle, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  completed: { label: 'Completado', icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-400/10' },
+  cancelled: { label: 'Cancelado', icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
 };
 
 export function TrackOrder() {
   const [trackingCode, setTrackingCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<OrderTracking | null>(null);
+  const [result, setResult] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const taxPercent = Math.round(storeConfig.finance.taxRate * 100);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,23 +29,7 @@ export function TrackOrder() {
     setLoading(true);
 
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-order`;
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ tracking_code: trackingCode.trim() }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al buscar el pedido');
-      }
-
+      const data = await trackOrder(trackingCode);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al buscar el pedido');
@@ -101,11 +60,7 @@ export function TrackOrder() {
             disabled={loading || !trackingCode.trim()}
             className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-3 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Search className="w-5 h-5" />
-            )}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
           </button>
         </form>
       </div>
@@ -136,13 +91,15 @@ export function TrackOrder() {
 
           <div className="mb-6 pb-6 border-b border-amber-500/20">
             <p className="text-slate-400 text-sm mb-3">Fecha de Pedido</p>
-            <p className="text-white mb-6">{new Date(result.created_at).toLocaleDateString('es-ES', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}</p>
+            <p className="text-white mb-6">
+              {formatDate(result.created_at, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
           </div>
 
           <div className="mb-6">
@@ -152,11 +109,11 @@ export function TrackOrder() {
                 <div key={index} className="bg-slate-900/50 border border-amber-500/10 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <p className="text-white font-semibold flex-1">{item.name}</p>
-                    <p className="text-amber-400 font-bold">${(item.quantity * item.price).toFixed(2)}</p>
+                    <p className="text-amber-400 font-bold">{formatCurrency(item.quantity * item.price)}</p>
                   </div>
                   <div className="flex justify-between text-sm">
                     <p className="text-slate-400">Cantidad: {item.quantity}</p>
-                    <p className="text-slate-400">${item.price.toFixed(2)} c/u</p>
+                    <p className="text-slate-400">{formatCurrency(item.price)} c/u</p>
                   </div>
                 </div>
               ))}
@@ -168,27 +125,26 @@ export function TrackOrder() {
             <div className="space-y-2">
               {(() => {
                 const subtotal = result.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-                const iva = subtotal * 0.19;
-                const shippingCost = result.shipping_cost || 0;
-                const calculatedTotal = subtotal + iva + shippingCost;
-
+                const { tax, total } = calculateTotals(subtotal, result.shipping_cost || 0);
                 return (
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-400">Subtotal</span>
-                      <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+                      <span className="text-white font-semibold">{formatCurrency(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">IVA (19%)</span>
-                      <span className="text-white font-semibold">${iva.toFixed(2)}</span>
+                      <span className="text-slate-400">
+                        {storeConfig.finance.taxLabel} ({taxPercent}%)
+                      </span>
+                      <span className="text-white font-semibold">{formatCurrency(tax)}</span>
                     </div>
                     <div className="flex justify-between text-sm pb-2 border-b border-amber-500/20">
                       <span className="text-slate-400">Envío</span>
-                      <span className="text-white font-semibold">${shippingCost.toFixed(2)}</span>
+                      <span className="text-white font-semibold">{formatCurrency(result.shipping_cost || 0)}</span>
                     </div>
                     <div className="flex justify-between items-center pt-2">
                       <span className="text-white font-bold text-lg">Total a Pagar</span>
-                      <span className="text-amber-400 font-bold text-2xl">${calculatedTotal.toFixed(2)}</span>
+                      <span className="text-amber-400 font-bold text-2xl">{formatCurrency(total)}</span>
                     </div>
                   </>
                 );

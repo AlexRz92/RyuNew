@@ -1,5 +1,6 @@
 import { Plus, Package } from 'lucide-react';
-import { Product, Inventory } from '../lib/supabase';
+import type { Product, Inventory } from '../lib/types';
+import { formatPrice } from '../lib/format';
 import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductCardProps {
@@ -10,9 +11,15 @@ interface ProductCardProps {
   priority?: boolean;
 }
 
-export function ProductCard({ product, inventory, onAddToCart, onProductClick, priority = false }: ProductCardProps) {
-  const inStock = inventory && inventory.quantity > 0;
-  const stockCount = inventory?.quantity || 0;
+export function ProductCard({
+  product,
+  inventory,
+  onAddToCart,
+  onProductClick,
+  priority = false,
+}: ProductCardProps) {
+  const inStock = inventory !== undefined && inventory.quantity > 0;
+  const stockCount = inventory?.quantity ?? 0;
 
   return (
     <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-lg sm:rounded-xl overflow-hidden hover:border-amber-500/40 transition-all hover:shadow-xl hover:shadow-amber-500/10 group flex flex-col h-full">
@@ -33,7 +40,9 @@ export function ProductCard({ product, inventory, onAddToCart, onProductClick, p
         )}
         <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-slate-900/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2 sm:py-1 rounded z-10">
           {inStock ? (
-            <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">{stockCount} disponibles</span>
+            <span className="text-[10px] sm:text-xs text-emerald-400 font-medium">
+              {stockCount} disponibles
+            </span>
           ) : (
             <span className="text-[10px] sm:text-xs text-red-400 font-medium">Sin stock</span>
           )}
@@ -51,9 +60,11 @@ export function ProductCard({ product, inventory, onAddToCart, onProductClick, p
         <div className="flex items-center justify-between mt-auto gap-2">
           <div className="flex-1 min-w-0">
             <p className="text-amber-400 text-lg sm:text-xl lg:text-2xl font-bold">
-              ${product.price.toFixed(2)}
+              {formatPrice(product.price)}
             </p>
-            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">SKU: {product.sku}</p>
+            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1 truncate">
+              SKU: {product.sku}
+            </p>
           </div>
 
           <button

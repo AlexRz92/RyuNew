@@ -1,7 +1,8 @@
 import { Search, User, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import type { Product } from '../lib/supabase';
+import { storeConfig } from '../config/store.config';
+import type { Product } from '../lib/types';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -19,23 +20,31 @@ export function Header({
   onSuggestionClick,
 }: HeaderProps) {
   const { user } = useAuth();
+  const { name, branding } = storeConfig;
+
   return (
     <header className="bg-gradient-to-b from-slate-900 to-slate-800 border-b border-amber-500/20 w-full">
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img
-                src="/ryu.png"
-                alt="Ryu Logo"
-                className="h-20 md:h-28 lg:h-32 w-auto object-contain"
-              />
-              <img
-                src="/ferreteria.png"
-                alt="Ferretería Ryu"
-                className="h-8 md:h-12 lg:h-16 w-auto object-contain"
-              />
-            </div>
+            <Link to="/" className="flex items-center gap-3">
+              {branding.logo && (
+                <img
+                  src={branding.logo}
+                  alt={`${name} logo`}
+                  className="h-20 md:h-28 lg:h-32 w-auto object-contain"
+                />
+              )}
+              {branding.logoText ? (
+                <img
+                  src={branding.logoText}
+                  alt={name}
+                  className="h-8 md:h-12 lg:h-16 w-auto object-contain"
+                />
+              ) : (
+                <span className="text-2xl md:text-3xl font-bold text-white">{name}</span>
+              )}
+            </Link>
 
             {onSearch && (
               <div className="w-full md:max-w-md">
