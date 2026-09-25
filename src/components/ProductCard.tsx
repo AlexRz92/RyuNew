@@ -24,7 +24,7 @@ export function ProductCard({
   return (
     <div className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col h-full">
       <div
-        className="h-40 sm:h-52 lg:h-60 bg-bg-subtle flex items-center justify-center overflow-hidden relative cursor-pointer flex-shrink-0"
+        className="aspect-square bg-bg-subtle flex items-center justify-center overflow-hidden relative cursor-pointer flex-shrink-0"
         onClick={() => onProductClick?.(product)}
       >
         {product.image_url ? (
