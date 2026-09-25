@@ -1,11 +1,10 @@
 import { X, Trash2, Plus, Minus } from 'lucide-react';
-import { Product } from '../lib/supabase';
+import type { CartItem } from '../lib/types';
+import { calculateTotals, formatCurrency, formatPrice } from '../lib/format';
+import { storeConfig } from '../config/store.config';
 import { ImageWithSkeleton } from './ImageWithSkeleton';
 
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
+export type { CartItem } from '../lib/types';
 
 interface CartProps {
   isOpen: boolean;
@@ -18,8 +17,8 @@ interface CartProps {
 
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onCheckout }: CartProps) {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const iva = subtotal * 0.19;
-  const total = subtotal + iva;
+  const { tax, total } = calculateTotals(subtotal);
+  const taxPercent = Math.round(storeConfig.finance.taxRate * 100);
 
   if (!isOpen) return null;
 
@@ -33,6 +32,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-lg"
+            aria-label="Cerrar carrito"
           >
             <X className="w-6 h-6" />
           </button>
@@ -46,7 +46,10 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
           ) : (
             <div className="space-y-4">
               {items.map((item) => (
-                <div key={item.product.id} className="bg-slate-800/50 border border-amber-500/20 rounded-lg p-4">
+                <div
+                  key={item.product.id}
+                  className="bg-slate-800/50 border border-amber-500/20 rounded-lg p-4"
+                >
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                       {item.product.image_url ? (
@@ -64,20 +67,26 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
 
                     <div className="flex-1 min-w-0">
                       <h3 className="text-white font-semibold mb-1 truncate">{item.product.name}</h3>
-                      <p className="text-amber-400 font-bold mb-2">${item.product.price.toFixed(2)}</p>
+                      <p className="text-amber-400 font-bold mb-2">{formatPrice(item.product.price)}</p>
 
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 bg-slate-900 rounded-lg p-1">
                           <button
-                            onClick={() => onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
+                            onClick={() =>
+                              onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))
+                            }
                             className="text-slate-400 hover:text-white transition-colors p-1"
+                            aria-label="Disminuir cantidad"
                           >
                             <Minus className="w-4 h-4" />
                           </button>
-                          <span className="text-white font-semibold w-8 text-center">{item.quantity}</span>
+                          <span className="text-white font-semibold w-8 text-center">
+                            {item.quantity}
+                          </span>
                           <button
                             onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
                             className="text-slate-400 hover:text-white transition-colors p-1"
+                            aria-label="Aumentar cantidad"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -86,6 +95,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
                         <button
                           onClick={() => onRemoveItem(item.product.id)}
                           className="text-red-400 hover:text-red-300 transition-colors p-1"
+                          aria-label="Eliminar del carrito"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -103,17 +113,19 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, o
             <div className="space-y-2 pb-4 border-b border-amber-500/20">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Subtotal</span>
-                <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+                <span className="text-white font-semibold">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">IVA (19%)</span>
-                <span className="text-white font-semibold">${iva.toFixed(2)}</span>
+                <span className="text-slate-400">
+                  {storeConfig.finance.taxLabel} ({taxPercent}%)
+                </span>
+                <span className="text-white font-semibold">{formatCurrency(tax)}</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-white font-bold text-lg">Total</span>
-              <span className="text-amber-400 text-3xl font-bold">${total.toFixed(2)}</span>
+              <span className="text-amber-400 text-3xl font-bold">{formatCurrency(total)}</span>
             </div>
 
             <button

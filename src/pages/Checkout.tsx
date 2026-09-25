@@ -1,17 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Upload, Loader2, CheckCircle, Truck, ArrowLeft, Home, Copy, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { CartItem } from '../components/Cart';
+import type { CartItem } from '../lib/types';
 import { states, getCitiesByState } from '../data/venezuelaData';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { BankAccountsCarousel } from '../components/BankAccountsCarousel';
+import {
+  createOrder,
+  uploadPaymentProof,
+  cancelOrder,
+  calculateShipping,
+  type ShippingInfo,
+} from '../services/orders';
+import { getProfile, upsertProfile } from '../services/profile';
+import { calculateTotals, formatCurrency } from '../lib/format';
+import { storeConfig } from '../config/store.config';
 
 interface CheckoutPageProps {
   items: CartItem[];
   onClearCart: () => void;
   isGuest?: boolean;
 }
+
+const SESSION_KEYS = {
+  orderId: 'checkout_order_id',
+  orderToken: 'checkout_order_token',
+  trackingCode: 'checkout_tracking_code',
+  orderCreated: 'checkout_order_created',
+  proofUploaded: 'checkout_proof_uploaded',
+};
 
 export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPageProps) {
   const navigate = useNavigate();
@@ -39,172 +57,98 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   const [redirecting, setRedirecting] = useState(false);
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shippingInfo, setShippingInfo] = useState<{
-    isFree: boolean;
-    cost: number;
-    message: string;
-  } | null>(null);
+  const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const iva = subtotal * 0.19;
   const shippingCost = shippingInfo?.isFree ? 0 : shippingInfo?.cost || 0;
-  const total = subtotal + iva + shippingCost;
+  const { tax, total } = calculateTotals(subtotal, shippingCost);
+  const taxPercent = Math.round(storeConfig.finance.taxRate * 100);
 
   const availableCities = formData.state ? getCitiesByState(formData.state) : [];
 
+  // Recupera el estado del checkout desde sessionStorage (sobrevive recargas).
   useEffect(() => {
-    const savedOrderId = sessionStorage.getItem('checkout_order_id');
-    const savedOrderToken = sessionStorage.getItem('checkout_order_token');
-    const savedTrackingCode = sessionStorage.getItem('checkout_tracking_code');
-    const savedOrderCreated = sessionStorage.getItem('checkout_order_created');
-    const savedProofUploaded = sessionStorage.getItem('checkout_proof_uploaded');
-
-    console.log('[useEffect] Recuperando datos de sessionStorage:', {
-      savedOrderId: savedOrderId ? 'presente' : 'ausente',
-      savedOrderToken: savedOrderToken ? 'presente' : 'ausente',
-      savedTrackingCode: savedTrackingCode ? 'presente' : 'ausente',
-      savedOrderCreated,
-      savedProofUploaded
-    });
+    const savedOrderId = sessionStorage.getItem(SESSION_KEYS.orderId);
+    const savedOrderToken = sessionStorage.getItem(SESSION_KEYS.orderToken);
+    const savedTrackingCode = sessionStorage.getItem(SESSION_KEYS.trackingCode);
 
     if (savedOrderId && savedOrderToken && savedTrackingCode) {
       setOrderId(savedOrderId);
       setOrderToken(savedOrderToken);
       setTrackingCode(savedTrackingCode);
-      if (savedOrderCreated === 'true') {
-        setOrderCreated(true);
-      }
-      if (savedProofUploaded === 'true') {
-        setProofUploaded(true);
-      }
-      console.log('[useEffect] Estado actualizado con datos guardados');
+      if (sessionStorage.getItem(SESSION_KEYS.orderCreated) === 'true') setOrderCreated(true);
+      if (sessionStorage.getItem(SESSION_KEYS.proofUploaded) === 'true') setProofUploaded(true);
+    }
+  }, []);
+
+  const loadUserProfile = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const profile = await getProfile(user.id);
+    if (profile) {
+      const stateCode = states.find((s) => s.name === profile.state)?.code || '';
+      setFormData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        cedula: profile.cedula || '',
+        customer_email: user.email || '',
+        customer_phone: profile.phone || '',
+        state: stateCode,
+        city: profile.city || '',
+        address: profile.address_line1 || '',
+      });
+      setHasPrefilledData(true);
     } else {
-      console.log('[useEffect] No se encontraron datos guardados en sessionStorage');
+      setFormData((prev) => ({ ...prev, customer_email: user.email || '' }));
+      setHasPrefilledData(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!isGuest) {
-      loadUserProfile();
-    }
-  }, [isGuest]);
+    if (!isGuest) loadUserProfile();
+  }, [isGuest, loadUserProfile]);
 
+  // Calcula el envío cuando cambian estado/ciudad.
   useEffect(() => {
-    if (formData.city && formData.state) {
-      calculateShipping();
-    } else {
+    const stateName = states.find((s) => s.code === formData.state)?.name;
+    if (!stateName || !formData.city) {
       setShippingInfo(null);
+      return;
     }
+    let active = true;
+    calculateShipping('Venezuela', stateName, formData.city, storeConfig.finance.currencySymbol)
+      .then((info) => {
+        if (active) setShippingInfo(info);
+      })
+      .catch(() => {
+        if (active) setShippingInfo({ isFree: false, cost: 0, message: 'Envío por confirmar' });
+      });
+    return () => {
+      active = false;
+    };
   }, [formData.city, formData.state]);
 
-  async function loadUserProfile() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from('customer_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profile) {
-          const stateCode = states.find((s) => s.name === profile.state)?.code || '';
-
-          setFormData({
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            cedula: profile.cedula || '',
-            customer_email: user.email || '',
-            customer_phone: profile.phone || '',
-            state: stateCode,
-            city: profile.city || '',
-            address: profile.address_line1 || '',
-          });
-          setHasPrefilledData(true);
-        } else {
-          setFormData(prev => ({ ...prev, customer_email: user.email || '' }));
-          setHasPrefilledData(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  }
-
   async function saveUserProfile() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || isGuest) return;
 
-      if (!user || isGuest) return;
-
-      const stateName = states.find((s) => s.code === formData.state)?.name || formData.state;
-
-      const profileData = {
-        id: user.id,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        cedula: formData.cedula,
-        phone: formData.customer_phone,
-        country: 'Venezuela',
-        state: stateName,
-        city: formData.city,
-        address_line1: formData.address || null,
-      };
-
-      const { error } = await supabase
-        .from('customer_profiles')
-        .upsert(profileData, { onConflict: 'id' });
-
-      if (error) {
-        console.error('Error saving profile:', error);
-      }
-    } catch (error) {
-      console.error('Error in saveUserProfile:', error);
-    }
-  }
-
-  async function calculateShipping() {
-    try {
-      const stateName = states.find((s) => s.code === formData.state)?.name;
-
-      if (!stateName || !formData.city) {
-        setShippingInfo(null);
-        return;
-      }
-
-      const { data: rule } = await supabase
-        .from('shipping_rules')
-        .select('*')
-        .eq('country', 'Venezuela')
-        .eq('state', stateName)
-        .eq('city', formData.city)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (rule) {
-        setShippingInfo({
-          isFree: rule.is_free,
-          cost: rule.base_cost,
-          message: rule.is_free
-            ? 'Envío gratis'
-            : `$${rule.base_cost.toFixed(2)} (puede variar según la distancia)`,
-        });
-      } else {
-        setShippingInfo({
-          isFree: false,
-          cost: 0,
-          message: 'Envío por confirmar',
-        });
-      }
-    } catch (error) {
-      console.error('Error calculating shipping:', error);
-      setShippingInfo({
-        isFree: false,
-        cost: 0,
-        message: 'Envío por confirmar',
-      });
-    }
+    const stateName = states.find((s) => s.code === formData.state)?.name || formData.state;
+    await upsertProfile({
+      id: user.id,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      cedula: formData.cedula,
+      phone: formData.customer_phone,
+      country: 'Venezuela',
+      state: stateName,
+      city: formData.city,
+      address_line1: formData.address || null,
+    });
   }
 
   const handleStateChange = (stateCode: string) => {
@@ -212,31 +156,24 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     setShippingInfo(null);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setProofFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProofPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    setProofFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setProofPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
-  const handleSubmitOrder = async (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const customerName = `${formData.first_name} ${formData.last_name}`;
       const stateName = states.find((s) => s.code === formData.state)?.name || '';
-
-      const orderPayload = {
-        customer_name: customerName,
+      const result = await createOrder({
+        customer_name: `${formData.first_name} ${formData.last_name}`,
         customer_email: formData.customer_email,
         customer_phone: formData.customer_phone || undefined,
         country: 'Venezuela',
@@ -244,195 +181,66 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
         city: formData.city,
         address: formData.address || undefined,
         cedula: formData.cedula,
-        items: items.map((item) => ({
-          product_id: item.product.id,
-          quantity: item.quantity,
-        })),
-      };
-
-      let authHeader = '';
-      if (user) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          authHeader = `Bearer ${session.access_token}`;
-        }
-      }
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const createOrderUrl = `${supabaseUrl}/functions/v1/create-order`;
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        'X-Client-Info': 'supabase-js/2.57.4',
-        'Apikey': anonKey,
-      };
-
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
-      }
-
-      const response = await fetch(createOrderUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(orderPayload),
+        items,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear la orden');
-      }
+      await saveUserProfile().catch(() => undefined);
 
-      const responseData = await response.json();
-
-      if (!responseData.success) {
-        throw new Error(responseData.error || 'Error al crear la orden');
-      }
-
-      await saveUserProfile();
-
-      setError(null);
-      setOrderId(responseData.order_id);
-      setOrderToken(responseData.order_token);
-      setTrackingCode(responseData.tracking_code);
+      setOrderId(result.order_id);
+      setOrderToken(result.order_token);
+      setTrackingCode(result.tracking_code);
       setOrderCreated(true);
 
-      sessionStorage.setItem('checkout_order_id', responseData.order_id);
-      sessionStorage.setItem('checkout_order_token', responseData.order_token);
-      sessionStorage.setItem('checkout_tracking_code', responseData.tracking_code);
-      sessionStorage.setItem('checkout_order_created', 'true');
-
-      console.log('[handleSubmitOrder] Pedido creado exitosamente:', {
-        orderId: responseData.order_id,
-        orderToken: responseData.order_token ? 'presente' : 'ausente',
-        trackingCode: responseData.tracking_code,
-        guardadoEnSessionStorage: true
-      });
+      sessionStorage.setItem(SESSION_KEYS.orderId, result.order_id);
+      sessionStorage.setItem(SESSION_KEYS.orderToken, result.order_token);
+      sessionStorage.setItem(SESSION_KEYS.trackingCode, result.tracking_code);
+      sessionStorage.setItem(SESSION_KEYS.orderCreated, 'true');
 
       onClearCart();
     } catch (err) {
-      console.error('Error creating order:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Hubo un error al procesar tu pedido. Por favor intenta nuevamente.';
-      setError(errorMessage);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Hubo un error al procesar tu pedido. Por favor intenta nuevamente.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUploadProof = async (e: React.FormEvent) => {
+  const handleUploadProof = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!orderId || !orderToken || !trackingCode) {
+      setError('Error: falta información del pedido. Vuelve a la tienda e intenta de nuevo.');
+      return;
+    }
+    if (!proofFile) {
+      setError('Debes seleccionar una imagen del comprobante');
+      return;
+    }
+
     setUploadingProof(true);
-
     try {
-      console.log('[handleUploadProof] Validando datos:', {
-        orderId: orderId ? 'presente' : 'FALTA',
-        orderToken: orderToken ? 'presente' : 'FALTA',
-        trackingCode: trackingCode ? 'presente' : 'FALTA',
-        proofFile: proofFile ? 'presente' : 'FALTA',
-        proofFileName: proofFile?.name
-      });
-
-      if (!orderId) {
-        console.error('[handleUploadProof] Error: orderId no está disponible');
-        setError('Error: No se encontró el ID del pedido. Por favor, intenta crear el pedido nuevamente.');
-        setUploadingProof(false);
-        return;
-      }
-
-      if (!orderToken) {
-        console.error('[handleUploadProof] Error: orderToken no está disponible');
-        setError('Error: No se encontró el token de la orden. Por favor, intenta crear el pedido nuevamente.');
-        setUploadingProof(false);
-        return;
-      }
-
-      if (!trackingCode) {
-        console.error('[handleUploadProof] Error: trackingCode no está disponible');
-        setError('Error: No se encontró el código de seguimiento. Por favor, intenta crear el pedido nuevamente.');
-        setUploadingProof(false);
-        return;
-      }
-
-      if (!proofFile) {
-        console.error('[handleUploadProof] Error: proofFile no está seleccionado');
-        setError('Debes seleccionar una imagen del comprobante');
-        setUploadingProof(false);
-        return;
-      }
-
-      console.log('[handleUploadProof] Leyendo archivo para convertir a base64...');
-
-      const fileData = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = () => reject(new Error('Error al leer el archivo'));
-        reader.readAsDataURL(proofFile);
-      });
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const uploadProofUrl = `${supabaseUrl}/functions/v1/upload-payment-proof`;
-
-      const payload = {
-        order_id: orderId,
-        order_token: orderToken,
-        file_name: proofFile.name,
-        file_data: fileData,
-      };
-
-      console.log('[handleUploadProof] Payload a enviar:', {
-        order_id: payload.order_id ? 'presente' : 'FALTA',
-        order_token: payload.order_token ? 'presente' : 'FALTA',
-        file_name: payload.file_name,
-        file_data_length: payload.file_data.length,
-        file_data_preview: payload.file_data.substring(0, 50) + '...'
-      });
-
-      console.log('[handleUploadProof] Enviando request al edge function:', {
-        url: uploadProofUrl,
-        payload_keys: Object.keys(payload)
-      });
-
-      const response = await fetch(uploadProofUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Client-Info': 'supabase-js/2.57.4',
-          'Apikey': anonKey,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[handleUploadProof] Error del servidor:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData
-        });
-        throw new Error(errorData.error || 'Error al subir el comprobante');
-      }
-
-      const responseData = await response.json();
-      console.log('[handleUploadProof] Comprobante subido exitosamente:', responseData);
-
-      setError(null);
+      await uploadPaymentProof({ order_id: orderId, order_token: orderToken, file: proofFile });
       setProofFile(null);
       setProofPreview(null);
       setProofUploaded(true);
-      sessionStorage.setItem('checkout_proof_uploaded', 'true');
+      sessionStorage.setItem(SESSION_KEYS.proofUploaded, 'true');
     } catch (err) {
-      console.error('Error uploading proof:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Hubo un error al subir el comprobante. Por favor intenta nuevamente.';
-      setError(errorMessage);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Hubo un error al subir el comprobante. Por favor intenta nuevamente.'
+      );
     } finally {
       setUploadingProof(false);
     }
+  };
+
+  const cleanupCheckout = () => {
+    Object.values(SESSION_KEYS).forEach((key) => sessionStorage.removeItem(key));
   };
 
   const handleCopyTracking = async () => {
@@ -440,74 +248,29 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       await navigator.clipboard.writeText(trackingCode);
       setCopiedTracking(true);
       setRedirecting(true);
-
       setTimeout(() => {
-        sessionStorage.removeItem('checkout_order_id');
-        sessionStorage.removeItem('checkout_order_token');
-        sessionStorage.removeItem('checkout_tracking_code');
-        sessionStorage.removeItem('checkout_order_created');
-        sessionStorage.removeItem('checkout_proof_uploaded');
+        cleanupCheckout();
         navigate('/');
       }, 1800);
-    } catch (error) {
-      console.error('Error copying tracking code:', error);
+    } catch {
       setCopiedTracking(false);
       setRedirecting(false);
     }
   };
 
-  const cleanupCheckout = () => {
-    sessionStorage.removeItem('checkout_order_id');
-    sessionStorage.removeItem('checkout_order_token');
-    sessionStorage.removeItem('checkout_tracking_code');
-    sessionStorage.removeItem('checkout_order_created');
-    sessionStorage.removeItem('checkout_proof_uploaded');
-  };
-
   const handleCancelOrderAndBack = async () => {
     setCancellingOrder(true);
     setError(null);
-
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const cancelOrderUrl = `${supabaseUrl}/functions/v1/cancel-order`;
-
-      let authHeader = '';
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        authHeader = `Bearer ${session.access_token}`;
-      }
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-        'X-Client-Info': 'supabase-js/2.57.4',
-        'Apikey': anonKey,
-      };
-
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
-      }
-
-      const response = await fetch(cancelOrderUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          order_id: orderId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al cancelar la orden');
-      }
-
+      await cancelOrder(orderId);
       cleanupCheckout();
       navigate('/');
     } catch (err) {
-      console.error('Error cancelling order:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Hubo un error al cancelar la orden. Por favor intenta nuevamente.';
-      setError(errorMessage);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Hubo un error al cancelar la orden. Por favor intenta nuevamente.'
+      );
     } finally {
       setCancellingOrder(false);
     }
@@ -518,6 +281,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     navigate('/');
   };
 
+  /* --------------------------- Carrito vacío --------------------------- */
   if (items.length === 0 && !orderCreated && !proofUploaded) {
     return (
       <>
@@ -540,35 +304,8 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     );
   }
 
+  /* ------------------------- Comprobante subido ------------------------ */
   if (proofUploaded) {
-    if (!trackingCode) {
-      return (
-        <>
-          <Header />
-          <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
-            <div className="container mx-auto px-4 max-w-2xl">
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-red-500/30 rounded-xl p-8 text-center shadow-2xl">
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 mb-6">
-                  <p className="text-red-400 font-semibold mb-2">Error al obtener el código de seguimiento</p>
-                  <p className="text-slate-300 text-sm">
-                    Hubo un problema al recuperar tu código de seguimiento. Por favor, contacta con soporte.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleBackToStore}
-                  className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all w-full"
-                >
-                  <Home className="w-5 h-5" />
-                  Volver a la tienda
-                </button>
-              </div>
-            </div>
-          </main>
-        </>
-      );
-    }
-
     return (
       <>
         <Header />
@@ -580,9 +317,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6">
                 <p className="text-orange-400 font-semibold text-sm mb-2">¡IMPORTANTE!</p>
-                <p className="text-slate-300 text-sm">
-                  Guarda este código para rastrear tu pedido
-                </p>
+                <p className="text-slate-300 text-sm">Guarda este código para rastrear tu pedido</p>
               </div>
 
               <p className="text-slate-300 mb-3 font-semibold">Tu código de seguimiento:</p>
@@ -596,9 +331,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <Check className="w-5 h-5 text-green-400" />
                     <p className="text-green-400 font-semibold">Código copiado</p>
                   </div>
-                  <p className="text-slate-300 text-sm mt-2">
-                    Redirigiendo a la tienda...
-                  </p>
+                  <p className="text-slate-300 text-sm mt-2">Redirigiendo a la tienda...</p>
                 </div>
               ) : (
                 <>
@@ -607,19 +340,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     disabled={copiedTracking}
                     className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-3 rounded-lg transition-colors w-full mb-4 disabled:opacity-70"
                   >
-                    {copiedTracking ? (
-                      <>
-                        <Check className="w-5 h-5" />
-                        Copiando...
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-5 h-5" />
-                        Copiar código de seguimiento
-                      </>
-                    )}
+                    {copiedTracking ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                    {copiedTracking ? 'Copiando...' : 'Copiar código de seguimiento'}
                   </button>
-
                   <p className="text-slate-400 text-sm mb-6">
                     Copia el código y serás redirigido automáticamente a la tienda
                   </p>
@@ -642,72 +365,63 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     );
   }
 
+  /* --------------------- Orden creada: subir comprobante --------------- */
   if (orderCreated) {
     return (
       <>
-        <Header onSearch={() => {}} searchQuery="" user={null} />
+        <Header />
         <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
           <div className="container mx-auto px-4 max-w-2xl">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-amber-500/20 rounded-xl p-8 shadow-2xl">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-white mb-2">¡Pedido Creado!</h2>
-                <p className="text-slate-300">Ahora necesitamos que subas el comprobante de transferencia</p>
+                <p className="text-slate-300">
+                  Ahora necesitamos que subas el comprobante de transferencia
+                </p>
               </div>
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
                 <p className="text-blue-400 font-semibold text-sm mb-2">Próximo paso</p>
                 <p className="text-slate-300 text-sm">
-                  Sube el comprobante de tu transferencia bancaria para completar tu pedido. Una vez lo valides, recibirás tu número de seguimiento.
+                  Sube el comprobante de tu transferencia bancaria para completar tu pedido. Una vez
+                  lo valides, recibirás tu número de seguimiento.
                 </p>
               </div>
 
               <form onSubmit={handleUploadProof} className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-white font-semibold text-lg">Comprobante de Transferencia</h3>
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                  <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
+                  <p className="text-slate-300 text-sm">
+                    Debes subir una captura del comprobante de transferencia
+                  </p>
+                </div>
 
-                  {(!orderId || !trackingCode) && (
-                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                      <p className="text-red-400 font-semibold mb-1">Error de pedido</p>
-                      <p className="text-slate-300 text-sm">
-                        No se encontró la información del pedido. Por favor, vuelve a la tienda e intenta nuevamente.
+                <div>
+                  <label className="block text-slate-300 text-sm mb-2 font-semibold">
+                    Captura de Pantalla del Comprobante *
+                  </label>
+                  <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
+                    <input
+                      type="file"
+                      id="proof-upload"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="proof-upload" className="cursor-pointer block">
+                      {proofPreview ? (
+                        <img
+                          src={proofPreview}
+                          alt="Comprobante"
+                          className="max-h-48 mx-auto rounded-lg mb-3"
+                        />
+                      ) : (
+                        <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                      )}
+                      <p className="text-slate-400 text-sm">
+                        {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen (JPG, PNG o WEBP)'}
                       </p>
-                    </div>
-                  )}
-
-                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-                    <p className="text-orange-400 font-semibold mb-1">¡Importante!</p>
-                    <p className="text-slate-300 text-sm">
-                      Debes subir una captura del comprobante de transferencia
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-300 text-sm mb-2 font-semibold">
-                      Captura de Pantalla del Comprobante *
                     </label>
-                    <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg p-6 text-center">
-                      <input
-                        type="file"
-                        id="proof-upload-step2"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      <label htmlFor="proof-upload-step2" className="cursor-pointer block">
-                        {proofPreview ? (
-                          <img
-                            src={proofPreview}
-                            alt="Comprobante"
-                            className="max-h-48 mx-auto rounded-lg mb-3"
-                          />
-                        ) : (
-                          <Upload className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                        )}
-                        <p className="text-slate-400 text-sm">
-                          {proofPreview ? 'Cambiar imagen' : 'Selecciona una imagen (JPG, PNG o WEBP)'}
-                        </p>
-                      </label>
-                    </div>
                   </div>
                 </div>
 
@@ -738,7 +452,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                   </button>
                   <button
                     type="submit"
-                    disabled={uploadingProof || !proofFile || !orderId || !trackingCode || cancellingOrder}
+                    disabled={uploadingProof || !proofFile || cancellingOrder}
                     className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 rounded-lg transition-all shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
                   >
                     {uploadingProof ? (
@@ -759,9 +473,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     );
   }
 
+  /* --------------------------- Formulario inicial ---------------------- */
   return (
     <>
-      <Header onSearch={() => {}} searchQuery="" user={null} />
+      <Header />
       <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 py-8">
         <div className="container mx-auto px-4 max-w-6xl pb-12">
           <div className="flex items-center gap-4 mb-6">
@@ -776,18 +491,18 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
           <div className="grid lg:grid-cols-[1fr_400px] gap-8">
             <form onSubmit={handleSubmitOrder} className="space-y-6 order-2 lg:order-1">
-
               <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-white font-semibold text-lg">Datos de Facturación y Envío</h3>
-                  {hasPrefilledData && (
-                    <p className="text-xs text-slate-400">Datos desde tu perfil</p>
-                  )}
+                  {hasPrefilledData && <p className="text-xs text-slate-400">Datos desde tu perfil</p>}
                 </div>
 
                 {hasPrefilledData && (
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex justify-between items-center mb-4">
-                    <p className="text-slate-300 text-sm">Para modificar tus datos, ve a <span className="text-blue-400 font-semibold">Mi Perfil</span></p>
+                    <p className="text-slate-300 text-sm">
+                      Para modificar tus datos, ve a{' '}
+                      <span className="text-blue-400 font-semibold">Mi Perfil</span>
+                    </p>
                     <button
                       type="button"
                       onClick={() => navigate('/perfil')}
@@ -798,123 +513,114 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                   </div>
                 )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Nombre *</label>
-                  <input
-                    type="text"
-                    required
-                    readOnly={hasPrefilledData}
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="Juan"
-                  />
-                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Nombre *">
+                      <input
+                        type="text"
+                        required
+                        readOnly={hasPrefilledData}
+                        value={formData.first_name}
+                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                        className={inputClass(hasPrefilledData)}
+                        placeholder="Juan"
+                      />
+                    </Field>
+                    <Field label="Apellido *">
+                      <input
+                        type="text"
+                        required
+                        readOnly={hasPrefilledData}
+                        value={formData.last_name}
+                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                        className={inputClass(hasPrefilledData)}
+                        placeholder="Pérez"
+                      />
+                    </Field>
+                  </div>
 
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Apellido *</label>
-                  <input
-                    type="text"
-                    required
-                    readOnly={hasPrefilledData}
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="Pérez"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Cédula *">
+                      <input
+                        type="text"
+                        required
+                        readOnly={hasPrefilledData}
+                        value={formData.cedula}
+                        onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                        className={inputClass(hasPrefilledData)}
+                        placeholder="V-12345678"
+                      />
+                    </Field>
+                    <Field label="Teléfono *">
+                      <input
+                        type="tel"
+                        required
+                        readOnly={hasPrefilledData}
+                        value={formData.customer_phone}
+                        onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
+                        className={inputClass(hasPrefilledData)}
+                        placeholder="0424-1234567"
+                      />
+                    </Field>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Cédula *</label>
-                  <input
-                    type="text"
-                    required
-                    readOnly={hasPrefilledData}
-                    value={formData.cedula}
-                    onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="V-12345678"
-                  />
-                </div>
+                  <Field label="Email *">
+                    <input
+                      type="email"
+                      required
+                      readOnly={hasPrefilledData}
+                      value={formData.customer_email}
+                      onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
+                      className={inputClass(hasPrefilledData)}
+                      placeholder="juan@ejemplo.com"
+                    />
+                  </Field>
 
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Teléfono *</label>
-                  <input
-                    type="tel"
-                    required
-                    readOnly={hasPrefilledData}
-                    value={formData.customer_phone}
-                    onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    placeholder="0424-1234567"
-                  />
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Estado *">
+                      <select
+                        required
+                        disabled={hasPrefilledData}
+                        value={formData.state}
+                        onChange={(e) => handleStateChange(e.target.value)}
+                        className={inputClass(hasPrefilledData)}
+                      >
+                        <option value="">Seleccionar estado</option>
+                        {states.map((state) => (
+                          <option key={state.code} value={state.code}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Ciudad *">
+                      <select
+                        required
+                        disabled={!formData.state || hasPrefilledData}
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className={inputClass(!formData.state || hasPrefilledData)}
+                      >
+                        <option value="">Seleccionar ciudad</option>
+                        {availableCities.map((city) => (
+                          <option key={city.name} value={city.name}>
+                            {city.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
 
-              <div>
-                <label className="block text-slate-300 text-sm mb-2">Email *</label>
-                <input
-                  type="email"
-                  required
-                  readOnly={hasPrefilledData}
-                  value={formData.customer_email}
-                  onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
-                  className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  placeholder="juan@ejemplo.com"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Estado *</label>
-                  <select
-                    required
-                    disabled={hasPrefilledData}
-                    value={formData.state}
-                    onChange={(e) => handleStateChange(e.target.value)}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="">Seleccionar estado</option>
-                    {states.map((state) => (
-                      <option key={state.code} value={state.code}>
-                        {state.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Ciudad *</label>
-                  <select
-                    required
-                    disabled={!formData.state || hasPrefilledData}
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${!formData.state || hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="">Seleccionar ciudad</option>
-                    {availableCities.map((city) => (
-                      <option key={city.name} value={city.name}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-                <div>
-                  <label className="block text-slate-300 text-sm mb-2">Dirección (opcional)</label>
-                  <textarea
-                    readOnly={hasPrefilledData}
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none resize-none ${hasPrefilledData ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    rows={3}
-                    placeholder="Calle, edificio, piso, apartamento..."
-                  />
+                  <Field label="Dirección (opcional)">
+                    <textarea
+                      readOnly={hasPrefilledData}
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className={`${inputClass(hasPrefilledData)} resize-none`}
+                      rows={3}
+                      placeholder="Calle, edificio, piso, apartamento..."
+                    />
+                  </Field>
                 </div>
               </div>
 
@@ -923,7 +629,8 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                 <p className="text-blue-400 font-semibold text-sm mb-2">Próximo paso</p>
                 <p className="text-slate-300 text-sm">
-                  Después de confirmar tu pedido, podrás subir el comprobante de tu transferencia bancaria.
+                  Después de confirmar tu pedido, podrás subir el comprobante de tu transferencia
+                  bancaria.
                 </p>
               </div>
 
@@ -966,13 +673,16 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
                   <div className="space-y-3 mb-4 max-h-[300px] overflow-y-auto">
                     {items.map((item) => (
-                      <div key={item.product.id} className="flex justify-between text-sm pb-3 border-b border-slate-700">
+                      <div
+                        key={item.product.id}
+                        className="flex justify-between text-sm pb-3 border-b border-slate-700"
+                      >
                         <div className="flex-1 pr-2">
                           <p className="text-white font-medium">{item.product.name}</p>
                           <p className="text-slate-400 text-xs mt-1">Cantidad: {item.quantity}</p>
                         </div>
                         <span className="text-amber-400 font-semibold whitespace-nowrap">
-                          ${(item.product.price * item.quantity).toFixed(2)}
+                          {formatCurrency(item.product.price * item.quantity)}
                         </span>
                       </div>
                     ))}
@@ -981,12 +691,14 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                   <div className="space-y-3 pt-4 border-t border-amber-500/30">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-300">Subtotal</span>
-                      <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+                      <span className="text-white font-semibold">{formatCurrency(subtotal)}</span>
                     </div>
 
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-300">IVA (19%)</span>
-                      <span className="text-white font-semibold">${iva.toFixed(2)}</span>
+                      <span className="text-slate-300">
+                        {storeConfig.finance.taxLabel} ({taxPercent}%)
+                      </span>
+                      <span className="text-white font-semibold">{formatCurrency(tax)}</span>
                     </div>
 
                     {shippingInfo && (
@@ -1000,7 +712,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                             <span className="text-green-400 font-semibold">Gratis</span>
                           ) : shippingInfo.cost > 0 ? (
                             <div>
-                              <div className="text-white font-semibold">${shippingInfo.cost.toFixed(2)}</div>
+                              <div className="text-white font-semibold">
+                                {formatCurrency(shippingInfo.cost)}
+                              </div>
                               <div className="text-xs text-slate-400">puede variar</div>
                             </div>
                           ) : (
@@ -1012,7 +726,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
                     <div className="flex justify-between items-center pt-4 border-t border-amber-500/30">
                       <span className="text-white font-bold text-lg">Total a Pagar</span>
-                      <span className="text-amber-400 font-bold text-2xl">${total.toFixed(2)}</span>
+                      <span className="text-amber-400 font-bold text-2xl">{formatCurrency(total)}</span>
                     </div>
                   </div>
                 </div>
@@ -1023,4 +737,19 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       </main>
     </>
   );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <label className="block text-slate-300 text-sm mb-2">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function inputClass(disabled: boolean): string {
+  return `w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-amber-500 focus:outline-none ${
+    disabled ? 'opacity-60 cursor-not-allowed' : ''
+  }`;
 }

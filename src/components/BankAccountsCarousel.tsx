@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Copy, Check, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-
-interface BankAccount {
-  id: string;
-  label: string;
-  bank_name: string;
-  account_holder: string;
-  account_number: string;
-  document_id: string;
-  account_type?: string;
-  notes?: string;
-}
+import { getActiveBankAccounts } from '../services/bankAccounts';
+import type { BankAccount } from '../lib/types';
 
 export function BankAccountsCarousel() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -21,26 +11,21 @@ export function BankAccountsCarousel() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
-    loadBankAccounts();
+    let active = true;
+    getActiveBankAccounts()
+      .then((data) => {
+        if (active) setAccounts(data);
+      })
+      .catch(() => {
+        if (active) setError('No se pudieron cargar las cuentas bancarias');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
-
-  async function loadBankAccounts() {
-    try {
-      const { data, error: queryError } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-
-      if (queryError) throw queryError;
-      setAccounts(data || []);
-    } catch (err) {
-      console.error('Error loading bank accounts:', err);
-      setError('No se pudieron cargar las cuentas bancarias');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   if (loading) {
     return (

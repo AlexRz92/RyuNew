@@ -1,4 +1,4 @@
-import { Category } from '../lib/supabase';
+import type { Category } from '../lib/types';
 
 interface CategoryFilterProps {
   categories: Category[];
