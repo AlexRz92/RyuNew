@@ -60,14 +60,27 @@ VITE_STORE_TAX_RATE="0.16"
 Los **productos y categorías** son datos: se gestionan desde el panel de
 administración, no en el código.
 
-### 3. Desarrollo
+### 3. Panel de administración
+
+Disponible en la ruta **`/admin`**. Requiere iniciar sesión con una cuenta que
+esté registrada en la tabla `admin_users` (con `is_active = true`); el acceso se
+valida con la función `is_admin()` de la base de datos.
+
+Secciones: Dashboard, Productos, Inventario, Categorías, Pedidos (con revisión de
+comprobantes y cambio de estado), Reglas de envío, Cuentas bancarias y
+Administradores.
+
+Para autorizar a un nuevo administrador: la persona se registra como usuario en
+la tienda, y luego se agrega su `user_id` a `admin_users` desde Supabase.
+
+### 4. Desarrollo
 
 ```bash
 npm install
 npm run dev
 ```
 
-### 4. Scripts
+### 5. Scripts
 
 | Script | Descripción |
 |--------|-------------|

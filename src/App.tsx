@@ -18,6 +18,15 @@ import { FeaturedProducts } from './components/FeaturedProducts';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { Profile } from './pages/Profile';
 import { Checkout } from './pages/Checkout';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { Dashboard } from './pages/admin/Dashboard';
+import { ProductsAdmin } from './pages/admin/ProductsAdmin';
+import { InventoryAdmin } from './pages/admin/InventoryAdmin';
+import { CategoriesAdmin } from './pages/admin/CategoriesAdmin';
+import { OrdersAdmin } from './pages/admin/OrdersAdmin';
+import { ShippingAdmin } from './pages/admin/ShippingAdmin';
+import { BankAccountsAdmin } from './pages/admin/BankAccountsAdmin';
+import { AdminsAdmin } from './pages/admin/AdminsAdmin';
 
 function App() {
   return (
@@ -26,6 +35,16 @@ function App() {
         <Route path="/" element={<Storefront />} />
         <Route path="/perfil" element={<ProfileRoute />} />
         <Route path="/checkout" element={<CheckoutRoute />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="productos" element={<ProductsAdmin />} />
+          <Route path="inventario" element={<InventoryAdmin />} />
+          <Route path="categorias" element={<CategoriesAdmin />} />
+          <Route path="pedidos" element={<OrdersAdmin />} />
+          <Route path="envios" element={<ShippingAdmin />} />
+          <Route path="cuentas" element={<BankAccountsAdmin />} />
+          <Route path="administradores" element={<AdminsAdmin />} />
+        </Route>
       </Routes>
     </div>
   );
