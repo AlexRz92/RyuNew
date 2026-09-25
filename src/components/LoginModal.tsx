@@ -1,5 +1,5 @@
 import { X, Mail, Lock, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { upsertProfile } from '../services/profile';
 import { states, getCitiesByState } from '../data/venezuelaData';
@@ -41,7 +41,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
     setProfileData({ ...profileData, state: stateCode, city: '' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);

@@ -1,5 +1,11 @@
 import { X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react';
 
 /** Encabezado de página del admin. */
 export function PageHeader({
@@ -33,7 +39,7 @@ export function Button({
   variant = 'primary',
   className = '',
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 }) {
   const variants = {
@@ -52,7 +58,7 @@ export function Button({
   );
 }
 
-export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
@@ -61,7 +67,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...props}
@@ -70,7 +76,7 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   );
 }
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}

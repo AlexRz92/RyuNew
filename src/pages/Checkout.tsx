@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Upload, Loader2, CheckCircle, Truck, ArrowLeft, Home, Copy, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { CartItem } from '../lib/types';
@@ -156,7 +156,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     setShippingInfo(null);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setProofFile(file);
@@ -165,7 +165,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     reader.readAsDataURL(file);
   };
 
-  const handleSubmitOrder = async (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -208,7 +208,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     }
   };
 
-  const handleUploadProof = async (e: React.FormEvent) => {
+  const handleUploadProof = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -739,7 +739,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
       <label className="block text-slate-300 text-sm mb-2">{label}</label>

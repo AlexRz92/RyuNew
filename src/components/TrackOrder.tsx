@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Search, Package, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { trackOrder, type TrackedOrder } from '../services/orders';
 import { calculateTotals, formatCurrency, formatDate } from '../lib/format';
@@ -22,7 +22,7 @@ export function TrackOrder() {
   const [error, setError] = useState<string | null>(null);
   const taxPercent = Math.round(storeConfig.finance.taxRate * 100);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setResult(null);
