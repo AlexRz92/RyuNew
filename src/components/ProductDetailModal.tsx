@@ -1,6 +1,7 @@
 import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
-import { Product, Inventory } from '../lib/supabase';
+import type { Product, Inventory } from '../lib/types';
+import { formatPrice } from '../lib/format';
 import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductDetailModalProps {
@@ -77,7 +78,7 @@ export function ProductDetailModal({ product, inventory, onClose, onAddToCart }:
 
                 <div className="bg-slate-900/50 border border-amber-500/20 rounded-lg p-4 mb-6">
                   <p className="text-slate-400 text-sm mb-1">Precio</p>
-                  <p className="text-amber-400 text-4xl font-bold">${product.price.toFixed(2)}</p>
+                  <p className="text-amber-400 text-4xl font-bold">{formatPrice(product.price)}</p>
                   <p className="text-slate-500 text-sm mt-2">SKU: {product.sku}</p>
                 </div>
 

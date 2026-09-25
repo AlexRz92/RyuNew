@@ -1,6 +1,7 @@
 import { X, Mail, Lock, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
+import { upsertProfile } from '../services/profile';
 import { states, getCitiesByState } from '../data/venezuelaData';
 
 interface LoginModalProps {
@@ -40,7 +41,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
     setProfileData({ ...profileData, state: stateCode, city: '' });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -78,22 +79,17 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         if (signUpError) throw signUpError;
 
         if (data.user) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          const { error: profileError } = await supabase
-            .from('customer_profiles')
-            .update({
-              first_name: profileData.first_name,
-              last_name: profileData.last_name,
-              phone: profileData.phone,
-              state: profileData.state,
-              city: profileData.city,
-            })
-            .eq('id', data.user.id);
-
-          if (profileError) {
-            console.error('Error updating profile:', profileError);
-          }
+          // El trigger handle_new_user crea el perfil; hacemos upsert para
+          // garantizar que los datos del formulario queden guardados sin
+          // depender de esperas arbitrarias.
+          await upsertProfile({
+            id: data.user.id,
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            phone: profileData.phone,
+            state: profileData.state,
+            city: profileData.city,
+          }).catch(() => undefined);
         }
 
         onLoginSuccess();

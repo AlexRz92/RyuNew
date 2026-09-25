@@ -1,46 +1,44 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
-  user: any | null;
+  user: User | null;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkUser();
+    let active = true;
+
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (active) setUser(data.user ?? null);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+      setUser(session?.user ?? null);
     });
 
     return () => {
+      active = false;
       authListener?.subscription.unsubscribe();
     };
   }, []);
 
-  async function checkUser() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user || null);
-    } catch (error) {
-      console.error('Error checking user:', error);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
