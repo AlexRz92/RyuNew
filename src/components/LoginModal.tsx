@@ -101,6 +101,9 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         if (signInError) throw signInError;
         onLoginSuccess();
       } else {
+        // Guardamos el NOMBRE del estado (no el código) para que sea
+        // consistente con el checkout y las reglas de envío.
+        const stateName = states.find((s) => s.code === profileData.state)?.name || profileData.state;
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -109,7 +112,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
               first_name: profileData.first_name,
               last_name: profileData.last_name,
               phone: profileData.phone,
-              state: profileData.state,
+              state: stateName,
               city: profileData.city,
             },
           },
@@ -122,7 +125,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             first_name: profileData.first_name,
             last_name: profileData.last_name,
             phone: profileData.phone,
-            state: profileData.state,
+            state: stateName,
             city: profileData.city,
           }).catch(() => undefined);
         }
