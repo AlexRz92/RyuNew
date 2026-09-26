@@ -16,6 +16,7 @@ import {
 import { getProfile, upsertProfile } from '../services/profile';
 import { calculateTotals, formatCurrency } from '../lib/format';
 import { storeConfig } from '../config/store.config';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface CheckoutPageProps {
   items: CartItem[];
@@ -33,10 +34,12 @@ const SESSION_KEYS = {
 
 export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPageProps) {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     cedula: '',
+    rif: '',
     customer_email: '',
     customer_phone: '',
     state: '',
@@ -94,6 +97,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
         cedula: profile.cedula || '',
+        rif: profile.rif || '',
         customer_email: user.email || '',
         customer_phone: profile.phone || '',
         state: stateCode,
@@ -143,6 +147,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
       first_name: formData.first_name,
       last_name: formData.last_name,
       cedula: formData.cedula,
+      rif: formData.rif || null,
       phone: formData.customer_phone,
       country: 'Venezuela',
       state: stateName,
@@ -539,16 +544,30 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field label="Cédula *">
-                      <input
-                        type="text"
-                        required
-                        value={formData.cedula}
-                        onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                        className={inputClass(false)}
-                        placeholder="V-12345678"
-                      />
-                    </Field>
+                    {settings.require_cedula && (
+                      <Field label="Cédula *">
+                        <input
+                          type="text"
+                          required
+                          value={formData.cedula}
+                          onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                          className={inputClass(false)}
+                          placeholder="V-12345678"
+                        />
+                      </Field>
+                    )}
+                    {settings.require_rif && (
+                      <Field label="RIF *">
+                        <input
+                          type="text"
+                          required
+                          value={formData.rif}
+                          onChange={(e) => setFormData({ ...formData, rif: e.target.value })}
+                          className={inputClass(false)}
+                          placeholder="J-12345678-9"
+                        />
+                      </Field>
+                    )}
                     <Field label="Teléfono *">
                       <input
                         type="tel"
