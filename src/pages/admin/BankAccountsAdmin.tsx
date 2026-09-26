@@ -6,6 +6,7 @@ import {
   adminUpdateBankAccount,
   adminDeleteBankAccount,
 } from '../../services/admin';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import type { BankAccount } from '../../lib/types';
 import {
   PageHeader,
@@ -44,6 +45,7 @@ const emptyForm: AccountForm = {
 };
 
 export function BankAccountsAdmin() {
+  const confirm = useConfirm();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +119,13 @@ export function BankAccountsAdmin() {
   }
 
   async function handleDelete(account: BankAccount) {
-    if (!confirm(`¿Eliminar la cuenta "${account.label}"?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar cuenta bancaria',
+      message: `¿Eliminar la cuenta "${account.label}"?`,
+      confirmText: 'Eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await adminDeleteBankAccount(account.id);
       await reload();

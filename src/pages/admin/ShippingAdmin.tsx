@@ -8,6 +8,7 @@ import {
 } from '../../services/admin';
 import { states, getCitiesByState } from '../../data/venezuelaData';
 import { formatCurrency } from '../../lib/format';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import type { ShippingRule } from '../../lib/types';
 import {
   PageHeader,
@@ -41,6 +42,7 @@ const emptyForm: RuleForm = {
 };
 
 export function ShippingAdmin() {
+  const confirm = useConfirm();
   const [rules, setRules] = useState<ShippingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +117,13 @@ export function ShippingAdmin() {
   }
 
   async function handleDelete(rule: ShippingRule) {
-    if (!confirm(`¿Eliminar la regla de envío para ${rule.city}?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar regla de envío',
+      message: `¿Eliminar la regla de envío para ${rule.city}?`,
+      confirmText: 'Eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await adminDeleteShippingRule(rule.id);
       await reload();

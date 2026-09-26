@@ -8,6 +8,7 @@ import {
   adminListCategories,
 } from '../../services/admin';
 import { formatCurrency } from '../../lib/format';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import type { Category, Product } from '../../lib/types';
 import {
   PageHeader,
@@ -45,6 +46,7 @@ const emptyForm: ProductForm = {
 };
 
 export function ProductsAdmin() {
+  const confirm = useConfirm();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,13 @@ export function ProductsAdmin() {
   }
 
   async function handleDelete(product: Product) {
-    if (!confirm(`¿Eliminar "${product.name}"? Esta acción no se puede deshacer.`)) return;
+    const ok = await confirm({
+      title: 'Eliminar producto',
+      message: `¿Eliminar "${product.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await adminDeleteProduct(product.id);
       await reload();
