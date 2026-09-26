@@ -114,6 +114,36 @@
   }
 }
 
+/* Marquee infinito para el carrusel de destacados. Al duplicar el contenido,
+   desplazar -50% deja el segundo grupo exactamente donde empezaba el primero,
+   creando un bucle perfecto. Corre en el compositor (GPU) => fluido y ligero. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee var(--marquee-duration, 40s) linear infinite;
+}
+
+/* Pausa al pasar el cursor por encima del carrusel. */
+.marquee-viewport:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Respeta la preferencia de reducir movimiento del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

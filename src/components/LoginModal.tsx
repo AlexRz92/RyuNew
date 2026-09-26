@@ -45,14 +45,14 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
     setPassword('');
     setConfirmPassword('');
     setShowPassword(false);
-    setIsLogin(true);
     setProfileData({ first_name: '', last_name: '', phone: '', state: '', city: '' });
   };
 
-  // Cierra el modal y limpia el formulario, para no conservar datos antiguos
-  // la próxima vez que se abra.
+  // Cierra el modal, limpia el formulario y vuelve a la pestaña de inicio de
+  // sesión, para no conservar datos antiguos la próxima vez que se abra.
   const handleClose = () => {
     resetForm();
+    setIsLogin(true);
     onClose();
   };
 
