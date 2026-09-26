@@ -92,22 +92,6 @@ export function AdminLayout() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-line space-y-1">
-          <button
-            onClick={() => navigate('/')}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-content-muted hover:bg-surface hover:text-content transition-colors"
-          >
-            <Store className="w-5 h-5" />
-            Ver tienda
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Cerrar sesión
-          </button>
-        </div>
       </aside>
 
       {mobileOpen && (
@@ -116,11 +100,33 @@ export function AdminLayout() {
 
       {/* Contenido */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden bg-bg-elevated border-b border-line p-4 flex items-center gap-3">
-          <button onClick={() => setMobileOpen(true)} className="text-content" aria-label="Abrir menú">
+        {/* Barra superior: acciones arriba a la derecha */}
+        <header className="sticky top-0 z-20 bg-bg-elevated/90 backdrop-blur-md border-b border-line px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden text-content"
+            aria-label="Abrir menú"
+          >
             <Menu className="w-6 h-6" />
           </button>
-          <span className="text-content font-semibold">{storeConfig.name} · Admin</span>
+          <span className="text-content font-semibold lg:hidden">{storeConfig.name}</span>
+
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-content-soft hover:bg-surface hover:text-content transition-colors"
+            >
+              <Store className="w-4 h-4" />
+              <span className="hidden sm:inline">Ver tienda</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Cerrar sesión</span>
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">

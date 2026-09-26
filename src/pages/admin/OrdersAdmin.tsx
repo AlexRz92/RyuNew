@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Eye, ExternalLink, Loader2 } from 'lucide-react';
+import { Eye, ExternalLink, Loader2, Search } from 'lucide-react';
 import {
   adminListOrders,
   adminUpdateOrderStatus,
@@ -7,10 +7,12 @@ import {
 import { getOrderItems } from '../../services/profile';
 import { formatCurrency, formatDate } from '../../lib/format';
 import type { Order, OrderItem, OrderStatus } from '../../lib/types';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import {
   PageHeader,
   Card,
   Button,
+  Input,
   Select,
   Modal,
   EmptyState,
@@ -21,10 +23,12 @@ import {
 const STATUSES: OrderStatus[] = ['pending', 'confirmed', 'completed', 'cancelled'];
 
 export function OrdersAdmin() {
+  const confirm = useConfirm();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const [search, setSearch] = useState('');
   const [detail, setDetail] = useState<Order | null>(null);
   const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -59,6 +63,15 @@ export function OrdersAdmin() {
   }
 
   async function changeStatus(order: Order, status: OrderStatus) {
+    if (status === order.status) return;
+    // Confirmación para evitar cambios accidentales.
+    const ok = await confirm({
+      title: 'Cambiar estado del pedido',
+      message: `¿Cambiar el pedido ${order.tracking_code} a "${status}"?`,
+      confirmText: 'Cambiar',
+    });
+    if (!ok) return;
+
     setUpdatingId(order.id);
     setError(null);
     try {
@@ -72,13 +85,32 @@ export function OrdersAdmin() {
     }
   }
 
-  const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
+  const term = search.trim().toLowerCase();
+  const filtered = orders
+    .filter((o) => (filter === 'all' ? true : o.status === filter))
+    .filter((o) =>
+      term === ''
+        ? true
+        : o.tracking_code.toLowerCase().includes(term) ||
+          o.customer_name.toLowerCase().includes(term)
+    );
 
   return (
     <div>
       <PageHeader title="Pedidos" description="Revisa y actualiza el estado de los pedidos" />
 
       {error && <ErrorBanner message={error} />}
+
+      {/* Buscador por código o cliente */}
+      <div className="mb-4 relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted pointer-events-none" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por código de seguimiento o cliente..."
+          className="pl-10"
+        />
+      </div>
 
       <div className="mb-4 flex gap-2 flex-wrap">
         {(['all', ...STATUSES] as const).map((s) => (

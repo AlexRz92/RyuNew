@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Save, Calculator } from 'lucide-react';
-import { getStoreSettings, updateStoreSettings, estimateShippingCost } from '../../services/settings';
-import { formatCurrency } from '../../lib/format';
+import { Loader2, Save } from 'lucide-react';
+import { getStoreSettings, updateStoreSettings } from '../../services/settings';
 import type { StoreSettings } from '../../lib/types';
 import { PageHeader, Card, Button, Input, Field, EmptyState, ErrorBanner } from './ui';
 import { useToast } from '../../contexts/ToastContext';
+import { useSettings } from '../../contexts/SettingsContext';
 
 export function SettingsAdmin() {
   const { showToast } = useToast();
+  const { reload: reloadSettings } = useSettings();
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Estado de la calculadora
-  const [distance, setDistance] = useState('');
 
   useEffect(() => {
     getStoreSettings()
@@ -37,6 +37,7 @@ export function SettingsAdmin() {
         shipping_margin: settings.shipping_margin,
         round_trip: settings.round_trip,
       });
+      reloadSettings();
       showToast('Configuración guardada');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar. ¿Ejecutaste la migración de store_settings?');
@@ -65,7 +66,6 @@ export function SettingsAdmin() {
     );
   }
 
-  const estimated = distance ? estimateShippingCost(Number(distance) || 0, settings) : 0;
   const marginPct = Math.round(settings.shipping_margin * 100);
 
   return (
@@ -156,40 +156,11 @@ export function SettingsAdmin() {
         </div>
       </Card>
 
-      {/* Calculadora */}
-      <Card className="p-5">
-        <h2 className="text-content font-semibold mb-1 flex items-center gap-2">
-          <Calculator className="w-5 h-5 text-brand" />
-          Calculadora de costo de envío
-        </h2>
-        <p className="text-content-muted text-sm mb-4">
-          Ingresa la distancia (en km) desde tu punto de partida hasta la ciudad de destino. El
-          resultado es el costo sugerido para poner en la regla de envío de esa ciudad.
-        </p>
-        <div className="flex items-end gap-4 flex-wrap">
-          <Field label="Distancia hasta el destino (km)">
-            <Input
-              type="number"
-              step="1"
-              min="0"
-              value={distance}
-              onChange={(e) => setDistance(e.target.value)}
-              placeholder="Ej: 120"
-              className="w-40"
-            />
-          </Field>
-          <div className="bg-brand-soft rounded-lg px-5 py-3">
-            <p className="text-content-muted text-xs">Costo sugerido</p>
-            <p className="text-content text-2xl font-bold tracking-tight">{formatCurrency(estimated)}</p>
-          </div>
-        </div>
-        {distance && Number(distance) > 0 && (
-          <p className="text-content-muted text-xs mt-3">
-            Cálculo: {distance} km {settings.round_trip ? '× 2 (ida y vuelta)' : '(solo ida)'} ÷{' '}
-            {settings.vehicle_kml} km/L × {formatCurrency(settings.fuel_price)}/L + {marginPct}% de margen.
-          </p>
-        )}
-      </Card>
+      <p className="text-content-muted text-sm">
+        La calculadora de costo de envío está en la sección{' '}
+        <span className="text-content font-medium">Envíos</span>, que es donde defines las reglas por
+        ciudad.
+      </p>
     </div>
   );
 }
