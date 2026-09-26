@@ -12,8 +12,8 @@ interface FeaturedProductsProps {
   onAddToCart?: (product: Product) => void;
 }
 
-/** Milisegundos entre cada avance automático del carrusel. */
-const AUTO_SCROLL_INTERVAL = 3000;
+/** Velocidad del desplazamiento automático, en píxeles por segundo. */
+const AUTO_SCROLL_SPEED = 40;
 
 export function FeaturedProducts({
   products,
@@ -33,14 +33,17 @@ export function FeaturedProducts({
     container.scrollBy({ left: amount, behavior: 'smooth' });
   };
 
-  // Auto-desplazamiento: avanza solo cada intervalo y, al llegar al final,
-  // vuelve suavemente al inicio. Se pausa cuando el usuario pasa el cursor
-  // por encima o toca el carrusel (para no interferir con la navegación).
+  // Auto-desplazamiento CONTINUO y fluido: avanza unos pocos píxeles por frame
+  // (sensación de cinta), y al llegar al final vuelve al inicio. Se pausa cuando
+  // el usuario pasa el cursor por encima o toca/arrastra el carrusel.
   useEffect(() => {
     const container = containerRef.current;
     if (!container || products.length <= 1) return;
 
     let paused = false;
+    let rafId = 0;
+    let lastTime = 0;
+
     const pause = () => {
       paused = true;
     };
@@ -53,25 +56,34 @@ export function FeaturedProducts({
     container.addEventListener('touchstart', pause, { passive: true });
     container.addEventListener('touchend', resume);
 
-    const timer = window.setInterval(() => {
-      if (paused) return;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      // +2px de tolerancia para detectar el final de forma fiable.
-      if (container.scrollLeft >= maxScroll - 2) {
-        container.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        container.scrollBy({ left: step, behavior: 'smooth' });
+    const tick = (time: number) => {
+      if (lastTime === 0) lastTime = time;
+      const delta = time - lastTime;
+      lastTime = time;
+
+      if (!paused) {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        if (maxScroll > 0) {
+          const advance = (AUTO_SCROLL_SPEED * delta) / 1000;
+          let next = container.scrollLeft + advance;
+          // Al llegar (casi) al final, reinicia al principio.
+          if (next >= maxScroll - 1) next = 0;
+          container.scrollLeft = next;
+        }
       }
-    }, AUTO_SCROLL_INTERVAL);
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
 
     return () => {
-      window.clearInterval(timer);
+      cancelAnimationFrame(rafId);
       container.removeEventListener('mouseenter', pause);
       container.removeEventListener('mouseleave', resume);
       container.removeEventListener('touchstart', pause);
       container.removeEventListener('touchend', resume);
     };
-  }, [products.length, step]);
+  }, [products.length]);
 
   if (products.length === 0) return null;
 
@@ -101,7 +113,7 @@ export function FeaturedProducts({
 
       <div
         ref={containerRef}
-        className="flex gap-4 sm:gap-5 overflow-x-auto scroll-smooth pb-2 scrollbar-hide"
+        className="flex gap-4 sm:gap-5 overflow-x-auto pb-2 scrollbar-hide"
       >
         {products.map((product, index) => {
           const productInventory = inventory.find((inv) => inv.product_id === product.id);
