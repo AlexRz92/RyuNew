@@ -498,18 +498,19 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                 </div>
 
                 {hasPrefilledData && (
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex justify-between items-center mb-4">
+                  <div className="bg-brand-soft border border-brand/30 rounded-lg p-3 mb-4">
                     <p className="text-content-soft text-sm">
-                      Para modificar tus datos, ve a{' '}
-                      <span className="text-blue-400 font-semibold">Mi Perfil</span>
+                      Cargamos los datos de tu perfil. Puedes editarlos aquí para este pedido; los
+                      cambios permanentes hazlos en{' '}
+                      <button
+                        type="button"
+                        onClick={() => navigate('/perfil')}
+                        className="text-brand font-semibold underline"
+                      >
+                        Mi Perfil
+                      </button>
+                      .
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/perfil')}
-                      className="text-blue-400 hover:text-blue-300 text-sm font-semibold underline transition-colors whitespace-nowrap ml-2"
-                    >
-                      Ir a Mi Perfil
-                    </button>
                   </div>
                 )}
 
@@ -519,10 +520,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="text"
                         required
-                        readOnly={hasPrefilledData}
                         value={formData.first_name}
                         onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        className={inputClass(hasPrefilledData)}
+                        className={inputClass(false)}
                         placeholder="Juan"
                       />
                     </Field>
@@ -530,10 +530,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="text"
                         required
-                        readOnly={hasPrefilledData}
                         value={formData.last_name}
                         onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        className={inputClass(hasPrefilledData)}
+                        className={inputClass(false)}
                         placeholder="Pérez"
                       />
                     </Field>
@@ -544,10 +543,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="text"
                         required
-                        readOnly={hasPrefilledData}
                         value={formData.cedula}
                         onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                        className={inputClass(hasPrefilledData)}
+                        className={inputClass(false)}
                         placeholder="V-12345678"
                       />
                     </Field>
@@ -555,10 +553,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="tel"
                         required
-                        readOnly={hasPrefilledData}
                         value={formData.customer_phone}
                         onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                        className={inputClass(hasPrefilledData)}
+                        className={inputClass(false)}
                         placeholder="0424-1234567"
                       />
                     </Field>
@@ -568,10 +565,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <input
                       type="email"
                       required
-                      readOnly={hasPrefilledData}
                       value={formData.customer_email}
                       onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
-                      className={inputClass(hasPrefilledData)}
+                      className={inputClass(false)}
                       placeholder="juan@ejemplo.com"
                     />
                   </Field>
@@ -580,10 +576,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <Field label="Estado *">
                       <select
                         required
-                        disabled={hasPrefilledData}
                         value={formData.state}
                         onChange={(e) => handleStateChange(e.target.value)}
-                        className={inputClass(hasPrefilledData)}
+                        className={inputClass(false)}
                       >
                         <option value="">Seleccionar estado</option>
                         {states.map((state) => (
@@ -596,10 +591,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <Field label="Ciudad *">
                       <select
                         required
-                        disabled={!formData.state || hasPrefilledData}
+                        disabled={!formData.state}
                         value={formData.city}
                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className={inputClass(!formData.state || hasPrefilledData)}
+                        className={inputClass(!formData.state)}
                       >
                         <option value="">Seleccionar ciudad</option>
                         {availableCities.map((city) => (
@@ -613,10 +608,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
                   <Field label="Dirección (opcional)">
                     <textarea
-                      readOnly={hasPrefilledData}
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className={`${inputClass(hasPrefilledData)} resize-none`}
+                      className={`${inputClass(false)} resize-none`}
                       rows={3}
                       placeholder="Calle, edificio, piso, apartamento..."
                     />
@@ -667,7 +661,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
             </form>
 
             <div className="order-1 lg:order-2">
-              <div className="lg:sticky lg:top-8">
+              <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto scrollbar-hide">
                 <div className="bg-bg-elevated border border-line rounded-xl p-6 shadow-xl">
                   <h3 className="text-accent font-semibold mb-4 text-lg">Resumen del Pedido</h3>
 
