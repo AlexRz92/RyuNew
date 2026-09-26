@@ -105,10 +105,10 @@ export function FeaturedProducts({
               </div>
 
               <div className="p-3 sm:p-4 flex flex-col">
-                <h3 className="text-content font-semibold text-sm sm:text-base mb-1 line-clamp-2 flex-shrink-0">
+                <h3 className="text-content font-semibold text-sm sm:text-base mb-1 line-clamp-2 min-h-[2.5rem] sm:min-h-[3rem]">
                   {product.name}
                 </h3>
-                <p className="text-content-muted text-xs sm:text-sm mb-3 line-clamp-2 flex-1">
+                <p className="text-content-muted text-xs sm:text-sm mb-3 line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
                   {product.description}
                 </p>
 
