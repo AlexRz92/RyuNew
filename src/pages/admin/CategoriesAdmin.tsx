@@ -6,6 +6,7 @@ import {
   adminUpdateCategory,
   adminDeleteCategory,
 } from '../../services/admin';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import type { Category } from '../../lib/types';
 import {
   PageHeader,
@@ -23,6 +24,7 @@ type CategoryForm = { name: string; description: string; image_url: string };
 const emptyForm: CategoryForm = { name: '', description: '', image_url: '' };
 
 export function CategoriesAdmin() {
+  const confirm = useConfirm();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +81,13 @@ export function CategoriesAdmin() {
   }
 
   async function handleDelete(category: Category) {
-    if (!confirm(`¿Eliminar la categoría "${category.name}"?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar categoría',
+      message: `¿Eliminar la categoría "${category.name}"?`,
+      confirmText: 'Eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await adminDeleteCategory(category.id);
       await reload();

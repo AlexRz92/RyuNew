@@ -2,6 +2,7 @@ import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import type { CartItem } from '../lib/types';
 import { calculateTotals, formatCurrency, formatPrice } from '../lib/format';
 import { storeConfig } from '../config/store.config';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 export type { CartItem } from '../lib/types';
@@ -25,9 +26,20 @@ export function Cart({
   onClearCart,
   onCheckout,
 }: CartProps) {
+  const confirm = useConfirm();
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const { tax, total } = calculateTotals(subtotal);
   const taxPercent = Math.round(storeConfig.finance.taxRate * 100);
+
+  const handleClear = async () => {
+    const ok = await confirm({
+      title: 'Vaciar carrito',
+      message: 'Se quitarán todos los productos del carrito. ¿Deseas continuar?',
+      confirmText: 'Vaciar',
+      variant: 'danger',
+    });
+    if (ok) onClearCart();
+  };
 
   if (!isOpen) return null;
 
@@ -44,11 +56,7 @@ export function Cart({
           <div className="flex items-center gap-1">
             {items.length > 0 && (
               <button
-                onClick={() => {
-                  if (confirm('¿Vaciar el carrito? Se quitarán todos los productos.')) {
-                    onClearCart();
-                  }
-                }}
+                onClick={handleClear}
                 className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors px-3 py-1.5 rounded-full"
               >
                 <Trash2 className="w-4 h-4" />
