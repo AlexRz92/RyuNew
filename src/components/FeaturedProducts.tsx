@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import type { Product, Inventory } from '../lib/types';
 import { formatPrice } from '../lib/format';
@@ -12,31 +12,68 @@ interface FeaturedProductsProps {
   onAddToCart?: (product: Product) => void;
 }
 
+/** Milisegundos entre cada avance automático del carrusel. */
+const AUTO_SCROLL_INTERVAL = 3000;
+
 export function FeaturedProducts({
   products,
   inventory,
   onProductClick,
   onAddToCart,
 }: FeaturedProductsProps) {
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const cardWidth = 210;
   const gap = 16;
-
-  if (products.length === 0) return null;
+  const step = cardWidth + gap;
 
   const scroll = (direction: 'left' | 'right') => {
-    const container = document.getElementById('featured-scroll');
+    const container = containerRef.current;
     if (!container) return;
-    const scrollAmount = direction === 'left' ? -(cardWidth + gap) : cardWidth + gap;
-    const newPosition = scrollPosition + scrollAmount;
-    const maxScroll = container.scrollWidth - container.clientWidth;
-    const clampedPosition = Math.max(0, Math.min(newPosition, maxScroll));
-    setScrollPosition(clampedPosition);
-    container.scrollTo({ left: clampedPosition, behavior: 'smooth' });
+    const amount = direction === 'left' ? -step : step;
+    container.scrollBy({ left: amount, behavior: 'smooth' });
   };
 
-  const canScrollLeft = scrollPosition > 0;
-  const canScrollRight = scrollPosition < products.length * (cardWidth + gap) - 1000;
+  // Auto-desplazamiento: avanza solo cada intervalo y, al llegar al final,
+  // vuelve suavemente al inicio. Se pausa cuando el usuario pasa el cursor
+  // por encima o toca el carrusel (para no interferir con la navegación).
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || products.length <= 1) return;
+
+    let paused = false;
+    const pause = () => {
+      paused = true;
+    };
+    const resume = () => {
+      paused = false;
+    };
+
+    container.addEventListener('mouseenter', pause);
+    container.addEventListener('mouseleave', resume);
+    container.addEventListener('touchstart', pause, { passive: true });
+    container.addEventListener('touchend', resume);
+
+    const timer = window.setInterval(() => {
+      if (paused) return;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      // +2px de tolerancia para detectar el final de forma fiable.
+      if (container.scrollLeft >= maxScroll - 2) {
+        container.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: step, behavior: 'smooth' });
+      }
+    }, AUTO_SCROLL_INTERVAL);
+
+    return () => {
+      window.clearInterval(timer);
+      container.removeEventListener('mouseenter', pause);
+      container.removeEventListener('mouseleave', resume);
+      container.removeEventListener('touchstart', pause);
+      container.removeEventListener('touchend', resume);
+    };
+  }, [products.length, step]);
+
+  if (products.length === 0) return null;
 
   return (
     <div className="mb-10">
@@ -47,16 +84,14 @@ export function FeaturedProducts({
         <div className="hidden lg:flex gap-2">
           <button
             onClick={() => scroll('left')}
-            disabled={!canScrollLeft}
-            className="w-9 h-9 rounded-full border border-line bg-surface text-content-soft hover:bg-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="w-9 h-9 rounded-full border border-line bg-surface text-content-soft hover:bg-surface-hover transition-colors flex items-center justify-center"
             aria-label="Anterior"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => scroll('right')}
-            disabled={!canScrollRight}
-            className="w-9 h-9 rounded-full border border-line bg-surface text-content-soft hover:bg-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="w-9 h-9 rounded-full border border-line bg-surface text-content-soft hover:bg-surface-hover transition-colors flex items-center justify-center"
             aria-label="Siguiente"
           >
             <ChevronRight className="w-5 h-5" />
@@ -65,7 +100,7 @@ export function FeaturedProducts({
       </div>
 
       <div
-        id="featured-scroll"
+        ref={containerRef}
         className="flex gap-4 sm:gap-5 overflow-x-auto scroll-smooth pb-2 scrollbar-hide"
       >
         {products.map((product, index) => {
