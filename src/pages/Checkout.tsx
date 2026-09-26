@@ -205,7 +205,8 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
         state: stateName,
         city: formData.city,
         address: formData.address || undefined,
-        cedula: formData.cedula,
+        cedula: formData.cedula || undefined,
+        rif: formData.rif || undefined,
         items,
       });
 
