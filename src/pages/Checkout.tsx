@@ -47,6 +47,9 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
     address: '',
   });
   const [hasPrefilledData, setHasPrefilledData] = useState(false);
+  // Campos que vinieron llenos del perfil: se muestran bloqueados (los cambios
+  // permanentes van en Mi Perfil). Los que faltan quedan editables aquí.
+  const [lockedFields, setLockedFields] = useState<Record<string, boolean>>({});
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -92,7 +95,12 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
     const profile = await getProfile(user.id);
     if (profile) {
-      const stateCode = states.find((s) => s.name === profile.state)?.code || '';
+      // El estado puede estar guardado como nombre ("Miranda") o como código
+      // ("MIR") según dónde se registró. Buscamos por ambas formas.
+      const stateCode =
+        states.find((s) => s.name === profile.state)?.code ||
+        states.find((s) => s.code === profile.state)?.code ||
+        '';
       setFormData({
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
@@ -103,6 +111,18 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
         state: stateCode,
         city: profile.city || '',
         address: profile.address_line1 || '',
+      });
+      // Un campo se bloquea solo si el perfil ya lo tiene con valor.
+      setLockedFields({
+        first_name: Boolean(profile.first_name),
+        last_name: Boolean(profile.last_name),
+        cedula: Boolean(profile.cedula),
+        rif: Boolean(profile.rif),
+        customer_email: Boolean(user.email),
+        customer_phone: Boolean(profile.phone),
+        state: Boolean(stateCode),
+        city: Boolean(profile.city),
+        address: Boolean(profile.address_line1),
       });
       setHasPrefilledData(true);
     } else {
@@ -525,9 +545,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="text"
                         required
+                        readOnly={lockedFields.first_name}
                         value={formData.first_name}
                         onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        className={inputClass(false)}
+                        className={inputClass(lockedFields.first_name)}
                         placeholder="Juan"
                       />
                     </Field>
@@ -535,9 +556,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="text"
                         required
+                        readOnly={lockedFields.last_name}
                         value={formData.last_name}
                         onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        className={inputClass(false)}
+                        className={inputClass(lockedFields.last_name)}
                         placeholder="Pérez"
                       />
                     </Field>
@@ -549,9 +571,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                         <input
                           type="text"
                           required
+                          readOnly={lockedFields.cedula}
                           value={formData.cedula}
                           onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                          className={inputClass(false)}
+                          className={inputClass(lockedFields.cedula)}
                           placeholder="V-12345678"
                         />
                       </Field>
@@ -561,9 +584,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                         <input
                           type="text"
                           required
+                          readOnly={lockedFields.rif}
                           value={formData.rif}
                           onChange={(e) => setFormData({ ...formData, rif: e.target.value })}
-                          className={inputClass(false)}
+                          className={inputClass(lockedFields.rif)}
                           placeholder="J-12345678-9"
                         />
                       </Field>
@@ -572,9 +596,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                       <input
                         type="tel"
                         required
+                        readOnly={lockedFields.customer_phone}
                         value={formData.customer_phone}
                         onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
-                        className={inputClass(false)}
+                        className={inputClass(lockedFields.customer_phone)}
                         placeholder="0424-1234567"
                       />
                     </Field>
@@ -584,9 +609,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <input
                       type="email"
                       required
+                      readOnly={lockedFields.customer_email}
                       value={formData.customer_email}
                       onChange={(e) => setFormData({ ...formData, customer_email: e.target.value })}
-                      className={inputClass(false)}
+                      className={inputClass(lockedFields.customer_email)}
                       placeholder="juan@ejemplo.com"
                     />
                   </Field>
@@ -595,9 +621,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <Field label="Estado *">
                       <select
                         required
+                        disabled={lockedFields.state}
                         value={formData.state}
                         onChange={(e) => handleStateChange(e.target.value)}
-                        className={inputClass(false)}
+                        className={inputClass(lockedFields.state)}
                       >
                         <option value="">Seleccionar estado</option>
                         {states.map((state) => (
@@ -610,10 +637,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
                     <Field label="Ciudad *">
                       <select
                         required
-                        disabled={!formData.state}
+                        disabled={lockedFields.city || !formData.state}
                         value={formData.city}
                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className={inputClass(!formData.state)}
+                        className={inputClass(lockedFields.city || !formData.state)}
                       >
                         <option value="">Seleccionar ciudad</option>
                         {availableCities.map((city) => (
@@ -627,9 +654,10 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
 
                   <Field label="Dirección (opcional)">
                     <textarea
+                      readOnly={lockedFields.address}
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className={`${inputClass(false)} resize-none`}
+                      className={`${inputClass(lockedFields.address)} resize-none`}
                       rows={3}
                       placeholder="Calle, edificio, piso, apartamento..."
                     />
@@ -680,7 +708,7 @@ export function Checkout({ items, onClearCart, isGuest = false }: CheckoutPagePr
             </form>
 
             <div className="order-1 lg:order-2">
-              <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto scrollbar-hide">
+              <div className="lg:sticky lg:top-24">
                 <div className="bg-bg-elevated border border-line rounded-xl p-6 shadow-xl">
                   <h3 className="text-accent font-semibold mb-4 text-lg">Resumen del Pedido</h3>
 
