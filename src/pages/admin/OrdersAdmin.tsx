@@ -4,6 +4,7 @@ import {
   adminListOrders,
   adminUpdateOrderStatus,
 } from '../../services/admin';
+import { getProofUrl } from '../../services/orders';
 import { getOrderItems } from '../../services/profile';
 import { formatCurrency, formatDate } from '../../lib/format';
 import type { Order, OrderItem, OrderStatus } from '../../lib/types';
@@ -33,6 +34,20 @@ export function OrdersAdmin() {
   const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [loadingProof, setLoadingProof] = useState(false);
+
+  async function handleViewProof(orderId: string) {
+    setLoadingProof(true);
+    setError(null);
+    try {
+      const url = await getProofUrl(orderId);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo abrir el comprobante');
+    } finally {
+      setLoadingProof(false);
+    }
+  }
 
   async function reload() {
     setLoading(true);
@@ -238,15 +253,15 @@ export function OrdersAdmin() {
           </div>
 
           {detail.payment_proof_url ? (
-            <a
-              href={detail.payment_proof_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-surface hover:bg-surface-hover text-content py-2.5 rounded-lg text-sm font-medium transition-colors"
+            <button
+              type="button"
+              onClick={() => handleViewProof(detail.id)}
+              disabled={loadingProof}
+              className="w-full flex items-center justify-center gap-2 bg-surface hover:bg-surface-hover text-content py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
-              <ExternalLink className="w-4 h-4" />
+              {loadingProof ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
               Ver comprobante de pago
-            </a>
+            </button>
           ) : (
             <p className="text-content-muted text-sm text-center">Sin comprobante de pago</p>
           )}
