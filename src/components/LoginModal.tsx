@@ -32,11 +32,12 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape' && isOpen) handleClose();
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const resetForm = () => {
     setError(null);
@@ -44,7 +45,15 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
     setPassword('');
     setConfirmPassword('');
     setShowPassword(false);
+    setIsLogin(true);
     setProfileData({ first_name: '', last_name: '', phone: '', state: '', city: '' });
+  };
+
+  // Cierra el modal y limpia el formulario, para no conservar datos antiguos
+  // la próxima vez que se abra.
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -131,7 +140,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
 
       <div className="relative bg-bg-elevated border border-line rounded-2xl w-full max-w-md shadow-card-hover">
         <div className="flex items-center justify-between p-6 border-b border-line">
@@ -151,7 +160,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-content-muted hover:text-content transition-colors p-2 hover:bg-surface rounded-full"
             aria-label="Cerrar"
           >
