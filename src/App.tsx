@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
+import { useToast } from './contexts/ToastContext';
 import { useCart } from './hooks/useCart';
 import { useCatalog } from './hooks/useCatalog';
 import { storeConfig } from './config/store.config';
@@ -58,8 +59,19 @@ function App() {
 function Storefront() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const { categories, products, featured, inventory, loading, inventoryFor } = useCatalog();
   const cart = useCart();
+
+  // Agrega al carrito y muestra confirmación visual (toast).
+  const addItem = cart.addItem;
+  const handleAddToCart = useCallback(
+    (product: Product, quantity = 1) => {
+      addItem(product, quantity);
+      showToast(`${product.name} agregado al carrito`);
+    },
+    [addItem, showToast]
+  );
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -174,7 +186,7 @@ function Storefront() {
             products={featured}
             inventory={inventory}
             onProductClick={setSelectedProduct}
-            onAddToCart={cart.addItem}
+            onAddToCart={handleAddToCart}
           />
         )}
 
@@ -190,13 +202,13 @@ function Storefront() {
               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-6 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4 mb-8">
               {currentProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   inventory={inventoryFor(product.id)}
-                  onAddToCart={cart.addItem}
+                  onAddToCart={handleAddToCart}
                   onProductClick={setSelectedProduct}
                   priority={index < 5}
                 />
@@ -234,6 +246,7 @@ function Storefront() {
         items={cart.items}
         onUpdateQuantity={cart.updateQuantity}
         onRemoveItem={cart.removeItem}
+        onClearCart={cart.clearCart}
         onCheckout={handleCheckout}
       />
 
@@ -263,7 +276,7 @@ function Storefront() {
         product={selectedProduct}
         inventory={selectedProduct ? inventoryFor(selectedProduct.id) : undefined}
         onClose={() => setSelectedProduct(null)}
-        onAddToCart={cart.addItem}
+        onAddToCart={handleAddToCart}
       />
     </>
   );

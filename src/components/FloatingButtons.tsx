@@ -40,7 +40,10 @@ export function FloatingButtons({ cartItemsCount, onCartClick, onTrackClick }: F
         >
           <ShoppingCart className="w-6 h-6 md:w-7 md:h-7" />
           {cartItemsCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-accent text-accent-contrast text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+            <span
+              key={cartItemsCount}
+              className="absolute -top-1 -right-1 bg-accent text-accent-contrast text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg animate-[badgePop_.3s_ease]"
+            >
               {cartItemsCount}
             </span>
           )}
