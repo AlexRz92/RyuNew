@@ -9,6 +9,7 @@ import {
   Truck,
   Landmark,
   Users,
+  Settings,
   LogOut,
   Store,
   Menu,
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/admin/envios', label: 'Envíos', icon: Truck },
   { to: '/admin/cuentas', label: 'Cuentas bancarias', icon: Landmark },
   { to: '/admin/administradores', label: 'Administradores', icon: Users },
+  { to: '/admin/configuracion', label: 'Configuración', icon: Settings },
 ];
 
 export function AdminLayout() {

@@ -75,6 +75,7 @@ export interface CustomerProfile {
   first_name: string;
   last_name: string;
   cedula: string;
+  rif: string | null;
   phone: string;
   country: string;
   state: string;
@@ -83,6 +84,19 @@ export interface CustomerProfile {
   address_line2: string | null;
   postal_code: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+/** Configuración global de la tienda (tabla store_settings, fila única id=1). */
+export interface StoreSettings {
+  id: number;
+  require_cedula: boolean;
+  require_rif: boolean;
+  enable_2fa: boolean;
+  fuel_price: number;
+  vehicle_kml: number;
+  shipping_margin: number;
+  round_trip: boolean;
   updated_at: string;
 }
 

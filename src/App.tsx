@@ -28,6 +28,7 @@ import { OrdersAdmin } from './pages/admin/OrdersAdmin';
 import { ShippingAdmin } from './pages/admin/ShippingAdmin';
 import { BankAccountsAdmin } from './pages/admin/BankAccountsAdmin';
 import { AdminsAdmin } from './pages/admin/AdminsAdmin';
+import { SettingsAdmin } from './pages/admin/SettingsAdmin';
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
           <Route path="envios" element={<ShippingAdmin />} />
           <Route path="cuentas" element={<BankAccountsAdmin />} />
           <Route path="administradores" element={<AdminsAdmin />} />
+          <Route path="configuracion" element={<SettingsAdmin />} />
         </Route>
       </Routes>
     </div>

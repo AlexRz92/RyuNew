@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { applyStoreMeta } from './lib/applyStoreMeta';
 import App from './App.tsx';
@@ -18,9 +19,11 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider>
         <ToastProvider>
           <ConfirmProvider>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
+            <SettingsProvider>
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </SettingsProvider>
           </ConfirmProvider>
         </ToastProvider>
       </ThemeProvider>
