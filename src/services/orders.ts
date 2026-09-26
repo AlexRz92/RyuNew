@@ -10,7 +10,8 @@ export interface CreateOrderInput {
   state: string;
   city: string;
   address?: string;
-  cedula: string;
+  cedula?: string;
+  rif?: string;
   items: CartItem[];
 }
 
@@ -35,7 +36,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     state: input.state,
     city: input.city,
     address: input.address || undefined,
-    cedula: input.cedula,
+    cedula: input.cedula || undefined,
+    rif: input.rif || undefined,
     items: input.items.map((item) => ({
       product_id: item.product.id,
       quantity: item.quantity,

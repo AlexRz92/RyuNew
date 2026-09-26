@@ -19,7 +19,8 @@ interface CheckoutRequest {
   state: string;
   city: string;
   address?: string;
-  cedula: string;
+  cedula?: string;
+  rif?: string;
   items: CartItem[];
   payment_proof_url?: string;
 }
@@ -57,7 +58,7 @@ Deno.serve(async (req: Request) => {
 
     const body: CheckoutRequest = await req.json();
 
-    if (!body.customer_name || !body.customer_email || !body.country || !body.state || !body.city || !body.cedula) {
+    if (!body.customer_name || !body.customer_email || !body.country || !body.state || !body.city) {
       return new Response(
         JSON.stringify({ error: "Missing required customer fields" }),
         {
@@ -249,9 +250,16 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const shippingNotes = `Cédula: ${body.cedula}\nEstado: ${body.state}\nCiudad: ${body.city}${
-      body.address ? `\nDirección: ${body.address}` : ""
-    }\n${shippingMessage}`;
+    const shippingNotes = [
+      body.cedula ? `Cédula: ${body.cedula}` : null,
+      body.rif ? `RIF: ${body.rif}` : null,
+      `Estado: ${body.state}`,
+      `Ciudad: ${body.city}`,
+      body.address ? `Dirección: ${body.address}` : null,
+      shippingMessage,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
