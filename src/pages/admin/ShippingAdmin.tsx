@@ -9,6 +9,7 @@ import {
 import { states, getCitiesByState } from '../../data/venezuelaData';
 import { formatCurrency } from '../../lib/format';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { ShippingCalculator } from './ShippingCalculator';
 import type { ShippingRule } from '../../lib/types';
 import {
   PageHeader,
@@ -148,6 +149,8 @@ export function ShippingAdmin() {
       />
 
       {error && <ErrorBanner message={error} />}
+
+      <ShippingCalculator />
 
       <Card className="overflow-hidden">
         {loading ? (

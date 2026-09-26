@@ -29,7 +29,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const nextUser = session?.user ?? null;
+      // Solo actualizamos si cambió el usuario (id distinto). Eventos como
+      // TOKEN_REFRESHED al volver a la pestaña traen el mismo usuario; evitar
+      // el setState previene re-renders que desmontarían formularios abiertos.
+      setUser((prev) => {
+        if (prev?.id === nextUser?.id) return prev;
+        return nextUser;
+      });
     });
 
     return () => {
