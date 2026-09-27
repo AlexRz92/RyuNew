@@ -9,6 +9,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { Header } from '../components/Header';
 import { LoginModal } from '../components/LoginModal';
 import { ReplaceCartModal } from '../components/ReplaceCartModal';
+import { TwoFactorSection } from '../components/TwoFactorSection';
 import {
   getProfile,
   updateProfile,
@@ -462,6 +463,9 @@ export function Profile({ cartItemsCount, onReplaceCart }: ProfileProps) {
               Actualizar contraseña
             </button>
           </div>
+
+          {/* Seguridad: 2FA (solo si la tienda lo habilitó) */}
+          {settings.enable_2fa && <TwoFactorSection />}
 
           {/* Compras */}
           <div className="bg-bg-elevated border border-line rounded-xl p-6">

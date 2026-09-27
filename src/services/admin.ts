@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { callEdgeFunction } from './edgeFunctions';
 import type {
   AdminUser,
   BankAccount,
@@ -177,4 +178,16 @@ export async function adminListAdmins(): Promise<AdminUser[]> {
 export async function adminSetAdminActive(userId: string, isActive: boolean): Promise<void> {
   const { error } = await supabase.from('admin_users').update({ is_active: isActive }).eq('user_id', userId);
   if (error) throw error;
+}
+
+/**
+ * Quita (resetea) el 2FA de un usuario que perdió su dispositivo autenticador.
+ * Usa la Edge Function admin-reset-mfa (verifica admin en el servidor).
+ */
+export async function adminResetUserMfa(targetUserId: string): Promise<number> {
+  const result = await callEdgeFunction<{ success: boolean; removed: number }>('admin-reset-mfa', {
+    body: { target_user_id: targetUserId },
+    withAuth: true,
+  });
+  return result.removed;
 }

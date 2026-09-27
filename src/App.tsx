@@ -19,6 +19,7 @@ import { FeaturedProducts } from './components/FeaturedProducts';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { Profile } from './pages/Profile';
 import { Checkout } from './pages/Checkout';
+import { ResetPassword } from './pages/ResetPassword';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { Dashboard } from './pages/admin/Dashboard';
 import { ProductsAdmin } from './pages/admin/ProductsAdmin';
@@ -37,6 +38,7 @@ function App() {
         <Route path="/" element={<Storefront />} />
         <Route path="/perfil" element={<ProfileRoute />} />
         <Route path="/checkout" element={<CheckoutRoute />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="productos" element={<ProductsAdmin />} />

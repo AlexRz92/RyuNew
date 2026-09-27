@@ -1,15 +1,34 @@
 import { useEffect, useState } from 'react';
-import { ShieldCheck, ShieldOff, Loader2 } from 'lucide-react';
-import { adminListAdmins, adminSetAdminActive } from '../../services/admin';
+import { ShieldCheck, ShieldOff, Loader2, KeyRound } from 'lucide-react';
+import { adminListAdmins, adminSetAdminActive, adminResetUserMfa } from '../../services/admin';
 import { formatDate } from '../../lib/format';
 import type { AdminUser } from '../../lib/types';
-import { PageHeader, Card, Button, EmptyState, ErrorBanner } from './ui';
+import { PageHeader, Card, Button, Input, Field, EmptyState, ErrorBanner } from './ui';
+import { useToast } from '../../contexts/ToastContext';
 
 export function AdminsAdmin() {
+  const { showToast } = useToast();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [resetUserId, setResetUserId] = useState('');
+  const [resettingMfa, setResettingMfa] = useState(false);
+
+  async function handleResetMfa() {
+    if (!resetUserId.trim()) return;
+    setResettingMfa(true);
+    setError(null);
+    try {
+      const removed = await adminResetUserMfa(resetUserId.trim());
+      showToast(removed > 0 ? `2FA reseteado (${removed} factor(es) eliminados)` : 'El usuario no tenía 2FA activo');
+      setResetUserId('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo resetear el 2FA');
+    } finally {
+      setResettingMfa(false);
+    }
+  }
 
   async function reload() {
     setLoading(true);
@@ -48,14 +67,41 @@ export function AdminsAdmin() {
 
       {error && <ErrorBanner message={error} />}
 
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-        <p className="text-blue-300 text-sm">
+      <div className="bg-brand-soft border border-brand/30 rounded-lg p-4 mb-6">
+        <p className="text-content-soft text-sm">
           Para dar acceso a un nuevo administrador, primero debe registrarse como usuario en la
-          tienda; luego su <code className="text-blue-200">user_id</code> debe añadirse a la tabla{' '}
-          <code className="text-blue-200">admin_users</code> desde Supabase. Aquí puedes activar o
+          tienda; luego su <code className="text-content">user_id</code> debe añadirse a la tabla{' '}
+          <code className="text-content">admin_users</code> desde Supabase. Aquí puedes activar o
           desactivar administradores existentes.
         </p>
       </div>
+
+      {/* Resetear 2FA de un usuario que perdió su dispositivo */}
+      <Card className="p-5 mb-6">
+        <h2 className="text-content font-semibold mb-1 flex items-center gap-2">
+          <KeyRound className="w-5 h-5 text-brand" />
+          Resetear 2FA de un usuario
+        </h2>
+        <p className="text-content-muted text-sm mb-4">
+          Si un cliente perdió su teléfono/autenticador y no puede entrar, pega aquí su
+          <code className="text-content"> user_id</code> (lo ves en Supabase → Authentication → Users)
+          para quitarle el 2FA. Luego podrá entrar solo con su contraseña y volver a activarlo.
+        </p>
+        <div className="flex items-end gap-3 flex-wrap">
+          <Field label="User ID del cliente">
+            <Input
+              value={resetUserId}
+              onChange={(e) => setResetUserId(e.target.value)}
+              placeholder="uuid del usuario"
+              className="w-80 max-w-full font-mono text-xs"
+            />
+          </Field>
+          <Button variant="danger" onClick={handleResetMfa} disabled={resettingMfa || !resetUserId.trim()}>
+            {resettingMfa ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+            Resetear 2FA
+          </Button>
+        </div>
+      </Card>
 
       <Card className="overflow-hidden">
         {loading ? (
