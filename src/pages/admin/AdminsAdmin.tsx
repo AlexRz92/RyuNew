@@ -1,32 +1,62 @@
 import { useEffect, useState } from 'react';
-import { ShieldCheck, ShieldOff, Loader2, KeyRound } from 'lucide-react';
-import { adminListAdmins, adminSetAdminActive, adminResetUserMfa } from '../../services/admin';
+import { ShieldCheck, ShieldOff, Loader2, KeyRound, Search } from 'lucide-react';
+import {
+  adminListAdmins,
+  adminSetAdminActive,
+  adminResetUserMfa,
+  adminListMfaUsers,
+  type MfaUser,
+} from '../../services/admin';
 import { formatDate } from '../../lib/format';
 import type { AdminUser } from '../../lib/types';
-import { PageHeader, Card, Button, Input, Field, EmptyState, ErrorBanner } from './ui';
+import { PageHeader, Card, Button, Input, EmptyState, ErrorBanner } from './ui';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 export function AdminsAdmin() {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [resetUserId, setResetUserId] = useState('');
-  const [resettingMfa, setResettingMfa] = useState(false);
 
-  async function handleResetMfa() {
-    if (!resetUserId.trim()) return;
-    setResettingMfa(true);
+  // Usuarios con 2FA activo
+  const [mfaUsers, setMfaUsers] = useState<MfaUser[]>([]);
+  const [mfaLoading, setMfaLoading] = useState(true);
+  const [mfaSearch, setMfaSearch] = useState('');
+  const [resettingId, setResettingId] = useState<string | null>(null);
+
+  async function loadMfaUsers() {
+    setMfaLoading(true);
+    try {
+      setMfaUsers(await adminListMfaUsers());
+    } catch {
+      /* si falla (edge function no desplegada), dejamos la lista vacía */
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  async function handleResetMfa(user: MfaUser) {
+    const ok = await confirm({
+      title: 'Resetear 2FA',
+      message: `¿Quitar el 2FA de ${user.name || user.email}? Podrá entrar solo con su contraseña y volver a activarlo.`,
+      confirmText: 'Resetear 2FA',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    setResettingId(user.user_id);
     setError(null);
     try {
-      const removed = await adminResetUserMfa(resetUserId.trim());
-      showToast(removed > 0 ? `2FA reseteado (${removed} factor(es) eliminados)` : 'El usuario no tenía 2FA activo');
-      setResetUserId('');
+      await adminResetUserMfa(user.user_id);
+      showToast('2FA reseteado correctamente');
+      setMfaUsers((prev) => prev.filter((u) => u.user_id !== user.user_id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo resetear el 2FA');
     } finally {
-      setResettingMfa(false);
+      setResettingId(null);
     }
   }
 
@@ -44,6 +74,7 @@ export function AdminsAdmin() {
 
   useEffect(() => {
     reload();
+    loadMfaUsers();
   }, []);
 
   async function toggle(admin: AdminUser) {
@@ -76,31 +107,71 @@ export function AdminsAdmin() {
         </p>
       </div>
 
-      {/* Resetear 2FA de un usuario que perdió su dispositivo */}
+      {/* Usuarios con 2FA activo: buscar y resetear si perdieron el dispositivo */}
       <Card className="p-5 mb-6">
         <h2 className="text-content font-semibold mb-1 flex items-center gap-2">
           <KeyRound className="w-5 h-5 text-brand" />
-          Resetear 2FA de un usuario
+          Usuarios con 2FA activo
         </h2>
         <p className="text-content-muted text-sm mb-4">
-          Si un cliente perdió su teléfono/autenticador y no puede entrar, pega aquí su
-          <code className="text-content"> user_id</code> (lo ves en Supabase → Authentication → Users)
-          para quitarle el 2FA. Luego podrá entrar solo con su contraseña y volver a activarlo.
+          Si un cliente perdió su teléfono/autenticador, resetéale el 2FA. Podrá entrar solo con su
+          contraseña y volver a activarlo.
         </p>
-        <div className="flex items-end gap-3 flex-wrap">
-          <Field label="User ID del cliente">
-            <Input
-              value={resetUserId}
-              onChange={(e) => setResetUserId(e.target.value)}
-              placeholder="uuid del usuario"
-              className="w-80 max-w-full font-mono text-xs"
-            />
-          </Field>
-          <Button variant="danger" onClick={handleResetMfa} disabled={resettingMfa || !resetUserId.trim()}>
-            {resettingMfa ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-            Resetear 2FA
-          </Button>
+
+        <div className="relative max-w-md mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-content-muted pointer-events-none" />
+          <Input
+            value={mfaSearch}
+            onChange={(e) => setMfaSearch(e.target.value)}
+            placeholder="Buscar por nombre o correo..."
+            className="pl-10"
+          />
         </div>
+
+        {mfaLoading ? (
+          <p className="text-content-muted text-sm">Cargando usuarios...</p>
+        ) : (() => {
+            const term = mfaSearch.trim().toLowerCase();
+            const list = mfaUsers.filter(
+              (u) =>
+                term === '' ||
+                u.name.toLowerCase().includes(term) ||
+                u.email.toLowerCase().includes(term)
+            );
+            if (mfaUsers.length === 0) {
+              return <p className="text-content-muted text-sm">Ningún usuario tiene 2FA activo.</p>;
+            }
+            if (list.length === 0) {
+              return <p className="text-content-muted text-sm">Sin resultados para “{mfaSearch}”.</p>;
+            }
+            return (
+              <div className="space-y-2">
+                {list.map((u) => (
+                  <div
+                    key={u.user_id}
+                    className="flex items-center justify-between gap-3 bg-bg-subtle rounded-lg p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-content font-medium truncate">{u.name}</p>
+                      <p className="text-content-muted text-xs truncate">{u.email}</p>
+                    </div>
+                    <Button
+                      variant="danger"
+                      onClick={() => handleResetMfa(u)}
+                      disabled={resettingId === u.user_id}
+                    >
+                      {resettingId === u.user_id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="w-4 h-4" />
+                      )}
+                      Resetear 2FA
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
       </Card>
 
       <Card className="overflow-hidden">
