@@ -2,6 +2,7 @@ import { X, Mail, Lock, Loader2, Eye, EyeOff, Store, Check } from 'lucide-react'
 import { useState, useEffect, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { upsertProfile } from '../services/profile';
+import { getAssuranceLevel, getVerifiedFactorId, verifyLoginCode } from '../services/mfa';
 import { storeConfig } from '../config/store.config';
 import { states, getCitiesByState } from '../data/venezuelaData';
 
@@ -22,6 +23,11 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  // Paso de verificación 2FA tras la contraseña
+  const [mfaStep, setMfaStep] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -41,10 +47,14 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
   const resetForm = () => {
     setError(null);
+    setInfo(null);
     setEmail('');
     setPassword('');
     setConfirmPassword('');
     setShowPassword(false);
+    setMfaStep(false);
+    setMfaFactorId('');
+    setMfaCode('');
     setProfileData({ first_name: '', last_name: '', phone: '', state: '', city: '' });
   };
 
@@ -54,6 +64,40 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
     resetForm();
     setIsLogin(true);
     onClose();
+  };
+
+  const handleVerifyMfa = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await verifyLoginCode(mfaFactorId, mfaCode.trim());
+      onLoginSuccess();
+    } catch {
+      setError('Código incorrecto. Revisa tu app autenticadora e intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError(null);
+    if (!EMAIL_REGEX.test(email)) {
+      setError('Escribe tu correo arriba y luego pulsa "¿Olvidaste tu contraseña?".');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetError) throw resetError;
+      setInfo('Te enviamos un correo con el enlace para restablecer tu contraseña. Revisa tu bandeja (y spam).');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo enviar el correo de recuperación.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -99,6 +143,19 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
       if (isLogin) {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
+
+        // ¿Requiere segundo factor? Si el usuario tiene 2FA, quedará en aal1
+        // necesitando aal2. En ese caso pedimos el código en vez de entrar.
+        const { current, next } = await getAssuranceLevel();
+        if (next === 'aal2' && current === 'aal1') {
+          const factorId = await getVerifiedFactorId();
+          if (factorId) {
+            setMfaFactorId(factorId);
+            setMfaStep(true);
+            setLoading(false);
+            return;
+          }
+        }
         onLoginSuccess();
       } else {
         // Guardamos el NOMBRE del estado (no el código) para que sea
@@ -157,7 +214,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             )}
             <div>
               <h2 className="text-lg font-bold text-content leading-tight">
-                {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
+                {mfaStep ? 'Verificación en dos pasos' : isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
               </h2>
               <p className="text-content-muted text-xs">{storeConfig.name}</p>
             </div>
@@ -171,6 +228,42 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           </button>
         </div>
 
+        {mfaStep ? (
+          <form onSubmit={handleVerifyMfa} className="p-6 space-y-4">
+            <p className="text-content-soft text-sm">
+              Ingresa el código de 6 dígitos de tu app autenticadora.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              autoFocus
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+              className="w-full bg-bg-subtle border border-line rounded-lg px-4 py-3 text-content text-center text-2xl tracking-[0.4em] focus:border-brand focus:outline-none"
+              placeholder="000000"
+            />
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                <p className="text-red-500 text-sm">{error}</p>
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loading || mfaCode.length !== 6}
+              className="w-full bg-brand hover:bg-brand-hover text-brand-contrast font-bold py-3 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verificar'}
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="w-full text-content-muted hover:text-content text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           <div>
             <label className="block text-content-soft text-sm mb-2">Correo electrónico</label>
@@ -322,6 +415,24 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             </>
           )}
 
+          {isLogin && (
+            <div className="text-right -mt-1">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-brand hover:text-brand-hover text-xs font-medium transition-colors"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+          )}
+
+          {info && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+              <p className="text-emerald-600 dark:text-emerald-400 text-sm">{info}</p>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
               <p className="text-red-500 text-sm">{error}</p>
@@ -356,6 +467,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
