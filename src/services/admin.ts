@@ -191,3 +191,17 @@ export async function adminResetUserMfa(targetUserId: string): Promise<number> {
   });
   return result.removed;
 }
+
+export interface MfaUser {
+  user_id: string;
+  name: string;
+  email: string;
+}
+
+/** Lista los usuarios que tienen 2FA activo (para poder resetearlo). */
+export async function adminListMfaUsers(): Promise<MfaUser[]> {
+  const result = await callEdgeFunction<{ users: MfaUser[] }>('admin-list-mfa-users', {
+    withAuth: true,
+  });
+  return result.users;
+}
