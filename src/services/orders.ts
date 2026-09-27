@@ -72,6 +72,18 @@ export async function cancelOrder(orderId: string): Promise<void> {
   await callEdgeFunction('cancel-order', { body: { order_id: orderId }, withAuth: true });
 }
 
+/**
+ * Obtiene una URL firmada temporal del comprobante de pago de un pedido.
+ * Solo funciona para administradores (verificado en el servidor).
+ */
+export async function getProofUrl(orderId: string): Promise<string> {
+  const result = await callEdgeFunction<{ url: string }>('get-proof-url', {
+    body: { order_id: orderId },
+    withAuth: true,
+  });
+  return result.url;
+}
+
 export interface TrackedOrder {
   tracking_code: string;
   status: OrderStatus;
