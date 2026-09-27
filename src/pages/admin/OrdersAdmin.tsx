@@ -35,13 +35,14 @@ export function OrdersAdmin() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [loadingProof, setLoadingProof] = useState(false);
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
 
   async function handleViewProof(orderId: string) {
     setLoadingProof(true);
     setError(null);
     try {
       const url = await getProofUrl(orderId);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      setProofUrl(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo abrir el comprobante');
     } finally {
@@ -282,6 +283,26 @@ export function OrdersAdmin() {
               ))}
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* Modal del comprobante de pago */}
+      {proofUrl && (
+        <Modal title="Comprobante de pago" onClose={() => setProofUrl(null)}>
+          <img
+            src={proofUrl}
+            alt="Comprobante de pago"
+            className="w-full rounded-lg border border-line"
+          />
+          <a
+            href={proofUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex items-center justify-center gap-2 w-full bg-surface hover:bg-surface-hover text-content py-2.5 rounded-lg text-sm font-medium transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Abrir en pestaña nueva
+          </a>
         </Modal>
       )}
     </div>
